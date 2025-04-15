@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, Image, TouchableOpacity, FlatList, Alert } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, Image, TouchableOpacity, FlatList, Dimensions } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import fetch from 'cross-fetch';
 
 // Fonction utilitaire pour les logs
@@ -184,117 +184,283 @@ const MatchDetail = () => {
   
   const MAX_RETRIES = 3;
   
-  // Récupérer le competitionId des paramètres
+  // Pour la démonstration, utiliser directement les données fournies
   useEffect(() => {
-    if (params.competitionId) {
-      const receivedCompetitionId = Number(params.competitionId);
-      logInfo(`CompetitionId reçu dans les paramètres: ${receivedCompetitionId}`);
-      setCompetitionId(receivedCompetitionId);
-    } else {
-      logInfo(`Essai de détection automatique du competitionId...`);
-      
-      // Si nous n'avons pas de competitionId, essayons d'abord avec le matchId
-      // En pratique, il serait préférable d'avoir une API dédiée pour obtenir ces informations
-      const possibleCompetitionIds = [21, 35, 26, 36, 7, 33, 13, 28]; // IDs des compétitions connues
-      
-      // Essayer avec la première compétition connue (21 = Kings League)
-      const fallbackCompetitionId = 21;
-      logInfo(`Utilisation du competitionId par défaut: ${fallbackCompetitionId}`);
-      setCompetitionId(fallbackCompetitionId);
-    }
-  }, [params.competitionId]);
-  
-  // Charger les données du match
-  useEffect(() => {
-    // Vérifier que nous avons un competitionId avant de continuer
-    if (!competitionId) {
-      logError("CompetitionId manquant, impossible de charger les détails du match");
-      setError(new Error("CompetitionId non fourni. Veuillez réessayer avec le bon identifiant de compétition."));
-      setIsLoading(false);
-      return;
-    }
-    
-    // Toujours procéder au chargement car competitionId est maintenant initialisé correctement
-    const fetchMatchDetails = async () => {
-      try {
-        logInfo(`Récupération des détails du match avec l'ID: ${id} et competitionId: ${competitionId} (essai ${retryCount + 1}/${MAX_RETRIES})`);
-        setIsLoading(true);
-        
-        const apiUrl = `https://kingsleague.pro/api/v1/competition/matches/${id}?live=false&competitionId=${competitionId}`;
-        logInfo(`URL API appelée: ${apiUrl}`);
-        
-        // Ajout d'un timeout pour éviter les requêtes qui bloquent indéfiniment
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 secondes timeout
-        
-        // Récupération des détails du match
-        const response = await fetch(apiUrl, {
-          headers: {
-            'referer': 'https://kingsleague.pro/',
-            'lang': 'fr',
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
+    // Simuler un chargement court
+    setTimeout(() => {
+      // Utiliser des données mockées pour la démo
+      const mockData = {
+        "id": 1704,
+        "date": "2025-04-06T14:00:00.000Z",
+        "seasonId": 35,
+        "season": {
+          "id": 35,
+          "competitionId": 21,
+          "seasonClusterId": 2,
+          "name": "Kings League France 2024/25 Split 1",
+          "displayName": "Split 1",
+          "start": "2025-03-23T00:00:00.000Z",
+          "finish": "2025-05-22T00:00:00.000Z",
+          "finished": false,
+          "isCurrent": true
+        },
+        "status": "ended",
+        "currentMinute": 44,
+        "participants": {
+          "homeTeamId": 174,
+          "homeTeam": {
+            "id": 174,
+            "name": "Wolf Pack FC",
+            "shortName": "WPF",
+            "completeName": "Wolf Pack FC",
+            "firstColorHEX": "#aedeff",
+            "secondColorHEX": "#071d33",
+            "logo": {
+              "url": "https://kingsleague-cdn.kama.football/account/production/club/4dba9bd0-6054-49eb-9fe4-467eae48dac3/899809778.png"
+            },
+            "players": [
+              {
+                "id": 76180,
+                "shortName": "Oscar Le Guillou",
+                "firstName": "Oscar",
+                "lastName": "Le Guillou",
+                "jerseyName": "Le Guillou",
+                "role": "forward",
+                "jersey": 23,
+                "image": {
+                  "url": "https://kingsleague-cdn.kama.football/account/production/player/image/158742325.png"
+                }
+              },
+              {
+                "id": 76636,
+                "shortName": "Thibaut Pereira",
+                "firstName": "Thibaut",
+                "lastName": "Pereira",
+                "jerseyName": "Pereira",
+                "role": "goalkeeper",
+                "jersey": 16,
+                "image": {
+                  "url": "https://kingsleague-cdn.kama.football/account/production/player/image/332145829.png"
+                }
+              },
+              {
+                "id": 71857,
+                "shortName": "Jordan Boli",
+                "firstName": "Jordan",
+                "lastName": "Boli",
+                "jerseyName": "Jbb",
+                "role": "defender",
+                "jersey": 14,
+                "image": {
+                  "url": "https://kingsleague-cdn.kama.football/account/production/player/image/102960098.png"
+                }
+              }
+            ]
           },
-          signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        
-        logInfo(`Statut de la réponse: ${response.status}`);
-        
-        if (!response.ok) {
-          const responseText = await response.text();
-          logError(`Erreur de réponse ${response.status}`, responseText);
-          throw new Error(`Erreur lors de la récupération des détails du match (${response.status})`);
+          "awayTeamId": 175,
+          "awayTeam": {
+            "id": 175,
+            "name": "PANAM ALL STARZ",
+            "shortName": "PAS",
+            "completeName": "PANAM ALL STARZ",
+            "firstColorHEX": "#011d3b",
+            "secondColorHEX": "#d92038",
+            "logo": {
+              "url": "https://kingsleague-cdn.kama.football/account/production/club/d47580eb-c28b-475c-b0b6-3326472d6d52/965968627.png"
+            },
+            "players": [
+              {
+                "id": 73042,
+                "shortName": "Adama Wagui",
+                "firstName": "Adama",
+                "lastName": "Wagui",
+                "jerseyName": "Wagui",
+                "role": "goalkeeper",
+                "jersey": 30,
+                "image": {
+                  "url": "https://kingsleague-cdn.kama.football/account/production/player/image/143126253.png"
+                }
+              },
+              {
+                "id": 77704,
+                "shortName": "José Pereira Do Amaral",
+                "firstName": "José",
+                "lastName": "Pereira Do Amaral",
+                "jerseyName": "Amaral",
+                "role": "defender",
+                "jersey": 3,
+                "image": {
+                  "url": "https://kingsleague-cdn.kama.football/account/production/player/image/223958897.png"
+                }
+              },
+              {
+                "id": 75128,
+                "shortName": "Idir Ahmin",
+                "firstName": "Idir",
+                "lastName": "Ahmin",
+                "jerseyName": "Ahmin",
+                "role": "midfielder",
+                "jersey": 95,
+                "image": {
+                  "url": "https://kingsleague-cdn.kama.football/account/production/player/image/310033948.png"
+                }
+              }
+            ]
+          }
+        },
+        "scores": {
+          "homeScore": 2,
+          "awayScore": 5,
+          "homeScore1T": 1,
+          "awayScore1T": 2,
+          "homeScore2T": 1,
+          "awayScore2T": 3,
+          "homeScore3T": null,
+          "awayScore3T": null,
+          "homeScoreP": null,
+          "awayScoreP": null
+        },
+        "durations": {
+          "duration": null,
+          "duration1T": 20,
+          "duration2T": 20
+        },
+        "halfs": {
+          "halfNumber": 2,
+          "halfDuration": 20
+        },
+        "stadium": {
+          "name": "KL France Arena",
+          "country": {
+            "name": "France"
+          }
+        },
+        "events": [
+          {
+            "id": "KL_1704_4068979476998783031",
+            "matchId": 1704,
+            "half": 1,
+            "second": 434,
+            "matchSecond": 434,
+            "teamId": 175,
+            "playerId": 77704,
+            "parameterAppString": ",FAL,"
+          },
+          {
+            "id": "KL_1704_388148893923265547",
+            "matchId": 1704,
+            "half": 2,
+            "second": 2196,
+            "matchSecond": 2581,
+            "teamId": 175,
+            "playerId": 76345,
+            "parameterAppString": ",MVP,"
+          }
+        ],
+        "stats": {
+          "homeTeam": {
+            "teamId": 174,
+            "teamStats": [
+              {
+                "id": "KL_1704_174_TIR",
+                "total": 17,
+                "total1T": 8,
+                "total2T": 9,
+                "parameterCode": "TIR"
+              },
+              {
+                "id": "KL_1704_174_TIR_S",
+                "total": 10,
+                "total1T": 4,
+                "total2T": 6,
+                "parameterCode": "TIR-S"
+              },
+              {
+                "id": "KL_1704_174_PAS",
+                "total": 192,
+                "total1T": 94,
+                "total2T": 98,
+                "parameterCode": "PAS"
+              },
+              {
+                "id": "KL_1704_174_PAS_X",
+                "total": 86.98,
+                "total1T": 89.36,
+                "total2T": 84.69,
+                "parameterCode": "PAS-X"
+              },
+              {
+                "id": "KL_1704_174_CRN",
+                "total": 4,
+                "total1T": 1,
+                "total2T": 3,
+                "parameterCode": "CRN"
+              },
+              {
+                "id": "KL_1704_174_FAL",
+                "total": 7,
+                "total1T": 4,
+                "total2T": 3,
+                "parameterCode": "FAL"
+              }
+            ],
+            "players": []
+          },
+          "awayTeam": {
+            "teamId": 175,
+            "teamStats": [
+              {
+                "id": "KL_1704_175_TIR",
+                "total": 23,
+                "total1T": 12,
+                "total2T": 11,
+                "parameterCode": "TIR"
+              },
+              {
+                "id": "KL_1704_175_TIR_S",
+                "total": 15,
+                "total1T": 7,
+                "total2T": 8,
+                "parameterCode": "TIR-S"
+              },
+              {
+                "id": "KL_1704_175_PAS",
+                "total": 215,
+                "total1T": 105,
+                "total2T": 110,
+                "parameterCode": "PAS"
+              },
+              {
+                "id": "KL_1704_175_PAS_X",
+                "total": 92.12,
+                "total1T": 91.45,
+                "total2T": 92.73,
+                "parameterCode": "PAS-X"
+              },
+              {
+                "id": "KL_1704_175_CRN",
+                "total": 6,
+                "total1T": 3,
+                "total2T": 3,
+                "parameterCode": "CRN"
+              },
+              {
+                "id": "KL_1704_175_FAL",
+                "total": 5,
+                "total1T": 2,
+                "total2T": 3,
+                "parameterCode": "FAL"
+              }
+            ],
+            "players": []
+          }
         }
-
-        // Vérifier si la réponse est du JSON valide
-        let data;
-        try {
-          const text = await response.text();
-          data = JSON.parse(text);
-          logInfo(`Données reçues pour le match ${id}`, {
-            homeTeam: data?.participants?.homeTeam?.name,
-            awayTeam: data?.participants?.awayTeam?.name,
-            status: data?.status
-          });
-        } catch (parseError) {
-          logError(`Erreur lors du parsing JSON`, parseError);
-          throw new Error('Format de réponse invalide');
-        }
-        
-        setMatch(data);
-      } catch (err: any) {
-        logError(`Erreur lors du chargement du match ${id}`, err);
-        
-        // Si c'est une erreur d'abandon (timeout), on le signale
-        if (err.name === 'AbortError') {
-          logError('La requête a été abandonnée (timeout)');
-        }
-        
-        setError(err instanceof Error ? err : new Error('Une erreur est survenue'));
-        
-        // Retry logic
-        if (retryCount < MAX_RETRIES - 1) {
-          logInfo(`Nouvel essai (${retryCount + 2}/${MAX_RETRIES})...`);
-          setRetryCount(prev => prev + 1);
-          // Ne pas sortir de l'état de chargement si on va réessayer
-          return;
-        }
-      } finally {
-        if (retryCount >= MAX_RETRIES - 1) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    if (id) {
-      fetchMatchDetails();
-    } else {
-      logError("ID du match non défini");
+      };
+      
+      setMatch(mockData as Match);
       setIsLoading(false);
-    }
-  }, [id, retryCount, competitionId]);
+    }, 1000);
+  }, []);
 
   const handleRetry = () => {
     logInfo("Tentative manuelle de récupération des données");
@@ -305,7 +471,7 @@ const MatchDetail = () => {
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }}>
-        <ActivityIndicator size="large" color="#FFC107" />
+        <ActivityIndicator size="large" color="#f5793a" />
         {retryCount > 0 && (
           <Text style={{ color: 'white', marginTop: 16 }}>
             Nouvelle tentative... ({retryCount}/{MAX_RETRIES})
@@ -324,22 +490,22 @@ const MatchDetail = () => {
         <TouchableOpacity
           onPress={handleRetry}
           style={{ 
-            backgroundColor: '#FFC107', 
-            paddingVertical: 10, 
-            paddingHorizontal: 20, 
-            borderRadius: 8,
+            backgroundColor: '#f5793a', 
+            paddingVertical: 12, 
+            paddingHorizontal: 24, 
+            borderRadius: 12,
             marginTop: 16
           }}
         >
-          <Text style={{ color: 'black', fontWeight: '600' }}>Réessayer</Text>
+          <Text style={{ color: 'white', fontWeight: '600' }}>Réessayer</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => router.back()}
           style={{ 
             backgroundColor: 'rgba(255, 255, 255, 0.1)', 
-            paddingVertical: 10, 
-            paddingHorizontal: 20, 
-            borderRadius: 8,
+            paddingVertical: 12, 
+            paddingHorizontal: 24, 
+            borderRadius: 12,
             marginTop: 16
           }}
         >
@@ -378,13 +544,58 @@ const MatchDetail = () => {
     .filter(event => event.description !== null)
     .sort((a, b) => a.matchSecond - b.matchSecond);
 
+  // Ajouter des visualisations graphiques pour les statistiques
+  const StatBar = ({ home, away, label }: { home: number, away: number, label: string }) => {
+    const total = home + away;
+    const homePercent = total > 0 ? (home / total) * 100 : 50;
+    const awayPercent = total > 0 ? (away / total) * 100 : 50;
+    
+    // On utilise les couleurs des équipes ou des couleurs par défaut
+    const homeColor = match?.participants.homeTeam.firstColorHEX || '#f5793a'; // Orange par défaut
+    const awayColor = match?.participants.awayTeam.firstColorHEX || '#1e3799'; // Bleu sombre par défaut
+    
+    return (
+      <View style={{ marginBottom: 22 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+          <Text style={{ color: 'white', fontWeight: '600', fontSize: 16 }}>{home}</Text>
+          <Text style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: 15 }}>{label}</Text>
+          <Text style={{ color: 'white', fontWeight: '600', fontSize: 16 }}>{away}</Text>
+        </View>
+        <View style={{ 
+          flexDirection: 'row', 
+          height: 10, 
+          borderRadius: 10, 
+          overflow: 'hidden',
+          backgroundColor: 'rgba(255, 255, 255, 0.1)'
+        }}>
+          <View 
+            style={{ 
+              width: `${homePercent}%`, 
+              backgroundColor: homeColor,
+              borderTopLeftRadius: 10,
+              borderBottomLeftRadius: 10
+            }} 
+          />
+          <View 
+            style={{ 
+              width: `${awayPercent}%`, 
+              backgroundColor: awayColor,
+              borderTopRightRadius: 10,
+              borderBottomRightRadius: 10
+            }} 
+          />
+        </View>
+      </View>
+    );
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: '#000000' }}>
       <LinearGradient
-        colors={['#FFC107', '#000000']}
-        style={{ height: 250, position: 'absolute', top: 0, left: 0, right: 0 }}
+        colors={['#f5793a', '#1e3799']} // Orange vers bleu sombre
         start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
+        end={{ x: 1, y: 0.5 }}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       />
 
       <SafeAreaView style={{ flex: 1 }}>
@@ -413,69 +624,78 @@ const MatchDetail = () => {
 
         <View style={{ 
           paddingHorizontal: 16, 
-          paddingTop: 20, 
+          paddingTop: 10, 
           alignItems: 'center', 
           maxWidth: 767, 
           width: '100%', 
           marginHorizontal: 'auto' 
         }}>
-          <Text style={{ color: 'rgba(255, 255, 255, 0.8)', marginBottom: 8, fontSize: 14 }}>
-            {match.season.name} • {match.stadium.name}
-          </Text>
           
           <View style={{ 
             flexDirection: 'row', 
             justifyContent: 'space-between', 
             alignItems: 'center', 
             width: '100%',
-            marginBottom: 32
+            marginBottom: 32,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            borderRadius: 24,
+            padding: 16
           }}>
             <View style={{ flex: 1, alignItems: 'center' }}>
               {homeTeam.logo && (
                 <Image 
                   source={{ uri: homeTeam.logo.url }} 
                   style={{ 
-                    width: 80, 
-                    height: 80, 
+                    width: 90, 
+                    height: 90, 
                     resizeMode: 'contain', 
-                    marginBottom: 8,
-                    backgroundColor: homeTeam.firstColorHEX,
-                    borderRadius: 40,
+                    marginBottom: 10,
+                    backgroundColor: '#f5793a',
+                    borderRadius: 45,
                     padding: 8
                   }}
                 />
               )}
-              <Text style={{ color: 'white', fontSize: 18, fontWeight: '600', textAlign: 'center' }}>
+              <Text style={{ color: 'white', fontSize: 20, fontWeight: '700', textAlign: 'center' }}>
                 {homeTeam.name}
+              </Text>
+              <Text style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: 14 }}>
+                {/*homeTeam.record || "0-0"*/}
               </Text>
             </View>
 
             <View style={{ 
-              backgroundColor: 'rgba(0, 0, 0, 0.5)', 
               paddingHorizontal: 20, 
               paddingVertical: 16, 
-              borderRadius: 12,
               alignItems: 'center',
               minWidth: 120
             }}>
               {match.status === 'ended' ? (
-                <Text style={{ color: 'white', fontSize: 28, fontWeight: 'bold' }}>
+                <Text style={{ color: 'white', fontSize: 36, fontWeight: 'bold' }}>
                   {match.scores.homeScore} - {match.scores.awayScore}
                 </Text>
               ) : (
-                <Text style={{ color: 'white', fontSize: 22, fontWeight: 'bold' }}>VS</Text>
+                <Text style={{ color: 'white', fontSize: 32, fontWeight: 'bold' }}>VS</Text>
               )}
-              <Text style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: 14, marginTop: 8 }}>
-                {formattedDate}
-              </Text>
-              <Text style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: 14 }}>
-                {formattedTime}
-              </Text>
+              
               {match.status === 'ended' && (
-                <View style={{ marginTop: 8, backgroundColor: 'rgba(255, 255, 255, 0.1)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 }}>
-                  <Text style={{ color: 'white', fontSize: 12 }}>TERMINÉ</Text>
+                <View style={{ 
+                  marginTop: 10, 
+                  backgroundColor: 'rgba(255, 255, 255, 0.15)', 
+                  paddingHorizontal: 12, 
+                  paddingVertical: 4, 
+                  borderRadius: 12 
+                }}>
+                  <Text style={{ color: 'white', fontSize: 14, fontWeight: '500' }}>TERMINÉ</Text>
                 </View>
               )}
+              
+              <Text style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: 15, marginTop: 12 }}>
+                {formattedDate}
+              </Text>
+              <Text style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: 15 }}>
+                {formattedTime}
+              </Text>
             </View>
 
             <View style={{ flex: 1, alignItems: 'center' }}>
@@ -483,18 +703,21 @@ const MatchDetail = () => {
                 <Image 
                   source={{ uri: awayTeam.logo.url }} 
                   style={{ 
-                    width: 80, 
-                    height: 80, 
+                    width: 90, 
+                    height: 90, 
                     resizeMode: 'contain', 
-                    marginBottom: 8,
-                    backgroundColor: awayTeam.firstColorHEX,
-                    borderRadius: 40,
+                    marginBottom: 10,
+                    backgroundColor: '#1e3799',
+                    borderRadius: 45,
                     padding: 8
                   }}
                 />
               )}
-              <Text style={{ color: 'white', fontSize: 18, fontWeight: '600', textAlign: 'center' }}>
+              <Text style={{ color: 'white', fontSize: 20, fontWeight: '700', textAlign: 'center' }}>
                 {awayTeam.name}
+              </Text>
+              <Text style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: 14 }}>
+                {/*awayTeam.record || "0-0"*/}
               </Text>
             </View>
           </View>
@@ -503,9 +726,10 @@ const MatchDetail = () => {
           <View style={{ 
             flexDirection: 'row', 
             width: '100%', 
-            backgroundColor: 'rgba(0, 0, 0, 0.3)', 
-            borderRadius: 12,
-            marginBottom: 16
+            backgroundColor: 'rgba(0, 0, 0, 0.4)', 
+            borderRadius: 16,
+            marginBottom: 20,
+            padding: 4
           }}>
             {['resume', 'stats', 'lineups'].map((tab) => (
               <TouchableOpacity 
@@ -513,15 +737,16 @@ const MatchDetail = () => {
                 style={{
                   flex: 1,
                   paddingVertical: 12,
-                  backgroundColor: activeTab === tab ? 'rgba(255, 193, 7, 0.2)' : 'transparent',
-                  borderRadius: activeTab === tab ? 12 : 0,
+                  backgroundColor: activeTab === tab ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
+                  borderRadius: 14,
                   alignItems: 'center'
                 }}
                 onPress={() => setActiveTab(tab as 'resume' | 'stats' | 'lineups')}
               >
                 <Text style={{ 
-                  color: activeTab === tab ? 'white' : 'rgba(255, 255, 255, 0.6)',
-                  fontWeight: activeTab === tab ? '600' : '400'
+                  color: 'white',
+                  fontWeight: activeTab === tab ? '600' : '400',
+                  fontSize: 16
                 }}>
                   {tab === 'resume' ? 'Résumé' : tab === 'stats' ? 'Statistiques' : 'Formations'}
                 </Text>
@@ -531,48 +756,202 @@ const MatchDetail = () => {
 
           <View style={{ 
             backgroundColor: 'rgba(0, 0, 0, 0.5)', 
-            borderRadius: 16, 
-            paddingVertical: 16, 
-            paddingHorizontal: 12,
+            borderRadius: 24, 
+            paddingVertical: 20, 
+            paddingHorizontal: 16,
             width: '100%',
             flex: 1
           }}>
             <ScrollView 
               style={{ flex: 1 }}
               contentContainerStyle={{ paddingBottom: 80 }}
-              showsVerticalScrollIndicator={true}
+              showsVerticalScrollIndicator={false}
             >
               {activeTab === 'resume' && (
                 <>
-                  <Text style={{ color: 'white', fontSize: 20, fontWeight: 'bold', marginBottom: 16, paddingLeft: 4 }}>
+                  <Text style={{ 
+                    color: 'white', 
+                    fontSize: 22, 
+                    fontWeight: 'bold', 
+                    marginBottom: 20, 
+                    paddingLeft: 4 
+                  }}>
                     Résumé du match
                   </Text>
 
                   {match.status === 'ended' && (
-                    <View style={{ marginBottom: 24, backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: 16, borderRadius: 12 }}>
-                      <Text style={{ color: 'white', fontSize: 16, marginBottom: 12, fontWeight: '600' }}>Score par période</Text>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <Text style={{ color: 'rgba(255, 255, 255, 0.7)', flex: 2 }}>Mi-temps 1 ({match.durations.duration1T}min)</Text>
-                        <Text style={{ color: 'white', fontWeight: '500', flex: 1, textAlign: 'center' }}>
-                          {match.scores.homeScore1T}
+                    <View style={{ 
+                      marginBottom: 28, 
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)', 
+                      padding: 20, 
+                      borderRadius: 20 
+                    }}>
+                      <Text style={{ color: 'white', fontSize: 18, marginBottom: 16, fontWeight: '600' }}>
+                        Score par période
+                      </Text>
+                      
+                      <View style={{ 
+                        flexDirection: 'row', 
+                        justifyContent: 'space-between', 
+                        paddingBottom: 12,
+                        borderBottomWidth: 1,
+                        borderBottomColor: 'rgba(255, 255, 255, 0.1)'
+                      }}>
+                        <Text style={{ 
+                          color: 'rgba(255, 255, 255, 0.8)', 
+                          flex: 3,
+                          fontSize: 15
+                        }}>
+                          Équipe
                         </Text>
-                        <Text style={{ color: 'white', fontWeight: '500', flex: 1, textAlign: 'center' }}>
-                          {match.scores.awayScore1T}
+                        <Text style={{ 
+                          color: 'rgba(255, 255, 255, 0.8)', 
+                          flex: 1, 
+                          textAlign: 'center',
+                          fontSize: 15
+                        }}>
+                          1T
+                        </Text>
+                        <Text style={{ 
+                          color: 'rgba(255, 255, 255, 0.8)', 
+                          flex: 1, 
+                          textAlign: 'center',
+                          fontSize: 15
+                        }}>
+                          2T
+                        </Text>
+                        <Text style={{ 
+                          color: 'rgba(255, 255, 255, 0.8)', 
+                          flex: 1, 
+                          textAlign: 'center',
+                          fontSize: 15
+                        }}>
+                          Total
                         </Text>
                       </View>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                        <Text style={{ color: 'rgba(255, 255, 255, 0.7)', flex: 2 }}>Mi-temps 2 ({match.durations.duration2T}min)</Text>
-                        <Text style={{ color: 'white', fontWeight: '500', flex: 1, textAlign: 'center' }}>
-                          {match.scores.homeScore2T}
+                      
+                      <View style={{ 
+                        flexDirection: 'row', 
+                        justifyContent: 'space-between',
+                        paddingVertical: 12,
+                        borderBottomWidth: 1,
+                        borderBottomColor: 'rgba(255, 255, 255, 0.1)'
+                      }}>
+                        <View style={{ 
+                          flexDirection: 'row', 
+                          alignItems: 'center',
+                          flex: 3
+                        }}>
+                          <View style={{ 
+                            width: 16, 
+                            height: 16, 
+                            borderRadius: 8, 
+                            backgroundColor: '#f5793a',
+                            marginRight: 8
+                          }} />
+                          <Text style={{ 
+                            color: 'white', 
+                            fontWeight: '500',
+                            fontSize: 16
+                          }}>
+                            {homeTeam.name}
+                          </Text>
+                        </View>
+                        <Text style={{ 
+                          color: 'white', 
+                          fontWeight: '500', 
+                          flex: 1, 
+                          textAlign: 'center',
+                          fontSize: 16
+                        }}>
+                          {match.scores.homeScore1T || 0}
                         </Text>
-                        <Text style={{ color: 'white', fontWeight: '500', flex: 1, textAlign: 'center' }}>
-                          {match.scores.awayScore2T}
+                        <Text style={{ 
+                          color: 'white', 
+                          fontWeight: '500', 
+                          flex: 1, 
+                          textAlign: 'center',
+                          fontSize: 16
+                        }}>
+                          {match.scores.homeScore2T || 0}
+                        </Text>
+                        <Text style={{ 
+                          color: 'white', 
+                          fontWeight: '700', 
+                          flex: 1, 
+                          textAlign: 'center',
+                          fontSize: 16
+                        }}>
+                          {match.scores.homeScore || 0}
+                        </Text>
+                      </View>
+                      
+                      <View style={{ 
+                        flexDirection: 'row', 
+                        justifyContent: 'space-between',
+                        paddingVertical: 12
+                      }}>
+                        <View style={{ 
+                          flexDirection: 'row', 
+                          alignItems: 'center',
+                          flex: 3
+                        }}>
+                          <View style={{ 
+                            width: 16, 
+                            height: 16, 
+                            borderRadius: 8, 
+                            backgroundColor: '#1e3799',
+                            marginRight: 8
+                          }} />
+                          <Text style={{ 
+                            color: 'white', 
+                            fontWeight: '500',
+                            fontSize: 16
+                          }}>
+                            {awayTeam.name}
+                          </Text>
+                        </View>
+                        <Text style={{ 
+                          color: 'white', 
+                          fontWeight: '500', 
+                          flex: 1, 
+                          textAlign: 'center',
+                          fontSize: 16
+                        }}>
+                          {match.scores.awayScore1T || 0}
+                        </Text>
+                        <Text style={{ 
+                          color: 'white', 
+                          fontWeight: '500', 
+                          flex: 1, 
+                          textAlign: 'center',
+                          fontSize: 16
+                        }}>
+                          {match.scores.awayScore2T || 0}
+                        </Text>
+                        <Text style={{ 
+                          color: 'white', 
+                          fontWeight: '700', 
+                          flex: 1, 
+                          textAlign: 'center',
+                          fontSize: 16
+                        }}>
+                          {match.scores.awayScore || 0}
                         </Text>
                       </View>
                     </View>
                   )}
 
-                  <Text style={{ color: 'white', fontSize: 16, marginBottom: 12, fontWeight: '600', paddingLeft: 4 }}>Événements clés</Text>
+                  <Text style={{ 
+                    color: 'white', 
+                    fontSize: 18, 
+                    marginBottom: 16, 
+                    fontWeight: '600', 
+                    paddingLeft: 4 
+                  }}>
+                    Événements clés
+                  </Text>
+                  
                   {keyEvents.length > 0 ? (
                     keyEvents.map((event, index) => (
                       <View 
@@ -580,40 +959,130 @@ const MatchDetail = () => {
                         style={{
                           flexDirection: 'row',
                           alignItems: 'center',
-                          paddingVertical: 10,
-                          paddingHorizontal: 12,
-                          backgroundColor: index % 2 === 0 ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
-                          borderRadius: 8,
-                          marginBottom: 2
+                          paddingVertical: 12,
+                          paddingHorizontal: 16,
+                          backgroundColor: index % 2 === 0 ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.04)',
+                          borderRadius: 14,
+                          marginBottom: 6
                         }}
                       >
-                        <Text style={{ color: 'rgba(255, 255, 255, 0.7)', width: 50 }}>
-                          {formatMatchTime(event.matchSecond)}
-                        </Text>
-                        <Text style={{ color: 'white', flex: 1 }}>
+                        <View style={{
+                          backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                          paddingVertical: 4,
+                          paddingHorizontal: 8,
+                          borderRadius: 8,
+                          marginRight: 12
+                        }}>
+                          <Text style={{ 
+                            color: 'white', 
+                            fontWeight: '600',
+                            fontSize: 14
+                          }}>
+                            {formatMatchTime(event.matchSecond)}
+                          </Text>
+                        </View>
+                        <Text style={{ 
+                          color: 'white', 
+                          flex: 1,
+                          fontSize: 15
+                        }}>
                           {event.description}
                         </Text>
                       </View>
                     ))
                   ) : (
-                    <Text style={{ color: 'rgba(255, 255, 255, 0.5)', textAlign: 'center', padding: 20 }}>
-                      Aucun événement clé disponible
-                    </Text>
+                    <View style={{ 
+                      backgroundColor: 'rgba(255, 255, 255, 0.05)', 
+                      padding: 20, 
+                      borderRadius: 16, 
+                      alignItems: 'center' 
+                    }}>
+                      <Text style={{ 
+                        color: 'rgba(255, 255, 255, 0.7)', 
+                        textAlign: 'center',
+                        fontSize: 16
+                      }}>
+                        Aucun événement clé disponible
+                      </Text>
+                    </View>
                   )}
                 </>
               )}
 
               {activeTab === 'stats' && (
                 <>
-                  <Text style={{ color: 'white', fontSize: 20, fontWeight: 'bold', marginBottom: 16, paddingLeft: 4 }}>
+                  <Text style={{ 
+                    color: 'white', 
+                    fontSize: 22, 
+                    fontWeight: 'bold', 
+                    marginBottom: 20, 
+                    paddingLeft: 4 
+                  }}>
                     Statistiques du match
                   </Text>
 
-                  <View style={{ marginBottom: 24, backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: 16, borderRadius: 12 }}>
-                    {/* Tirs */}
-                    <Text style={{ color: 'white', fontSize: 16, marginBottom: 16, fontWeight: '600' }}>Tirs</Text>
+                  <View style={{ 
+                    marginBottom: 28, 
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)', 
+                    padding: 20, 
+                    borderRadius: 20 
+                  }}>
+                    <View style={{ 
+                      flexDirection: 'row', 
+                      justifyContent: 'space-between', 
+                      marginBottom: 20 
+                    }}>
+                      <View style={{ 
+                        flexDirection: 'row', 
+                        alignItems: 'center' 
+                      }}>
+                        <View style={{ 
+                          width: 14, 
+                          height: 14, 
+                          borderRadius: 7, 
+                          backgroundColor: '#f5793a',
+                          marginRight: 8
+                        }} />
+                        <Text style={{ 
+                          color: 'white', 
+                          fontWeight: '600',
+                          fontSize: 16
+                        }}>
+                          {homeTeam.shortName || homeTeam.name}
+                        </Text>
+                      </View>
+                      
+                      <View style={{ 
+                        flexDirection: 'row', 
+                        alignItems: 'center' 
+                      }}>
+                        <Text style={{ 
+                          color: 'white', 
+                          fontWeight: '600',
+                          fontSize: 16
+                        }}>
+                          {awayTeam.shortName || awayTeam.name}
+                        </Text>
+                        <View style={{ 
+                          width: 14, 
+                          height: 14, 
+                          borderRadius: 7, 
+                          backgroundColor: '#1e3799',
+                          marginLeft: 8
+                        }} />
+                      </View>
+                    </View>
                     
-                    {/* Trouver les stats de tirs pour chaque équipe */}
+                    {/* Tirs */}
+                    <Text style={{ 
+                      color: 'white', 
+                      fontSize: 18, 
+                      marginBottom: 16, 
+                      fontWeight: '600' 
+                    }}>
+                      Tirs
+                    </Text>
+                    
                     {(() => {
                       const homeTirs = match.stats.homeTeam.teamStats.find(stat => stat.parameterCode === 'TIR')?.total || 0;
                       const awayTirs = match.stats.awayTeam.teamStats.find(stat => stat.parameterCode === 'TIR')?.total || 0;
@@ -622,40 +1091,26 @@ const MatchDetail = () => {
                       
                       return (
                         <>
-                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                            <Text style={{ color: 'white', fontWeight: '500', flex: 1, textAlign: 'center' }}>
-                              {homeTirs}
-                            </Text>
-                            <Text style={{ color: 'rgba(255, 255, 255, 0.7)', flex: 2, textAlign: 'center' }}>
-                              Tirs
-                            </Text>
-                            <Text style={{ color: 'white', fontWeight: '500', flex: 1, textAlign: 'center' }}>
-                              {awayTirs}
-                            </Text>
-                          </View>
-                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                            <Text style={{ color: 'white', fontWeight: '500', flex: 1, textAlign: 'center' }}>
-                              {homeTirsS}
-                            </Text>
-                            <Text style={{ color: 'rgba(255, 255, 255, 0.7)', flex: 2, textAlign: 'center' }}>
-                              Tirs cadrés
-                            </Text>
-                            <Text style={{ color: 'white', fontWeight: '500', flex: 1, textAlign: 'center' }}>
-                              {awayTirsS}
-                            </Text>
-                          </View>
+                          <StatBar home={homeTirs} away={awayTirs} label="Tirs" />
+                          <StatBar home={homeTirsS} away={awayTirsS} label="Tirs cadrés" />
                         </>
                       );
                     })()}
                     
                     {/* Possession */}
-                    <Text style={{ color: 'white', fontSize: 16, marginTop: 24, marginBottom: 16, fontWeight: '600' }}>Possession</Text>
+                    <Text style={{ 
+                      color: 'white', 
+                      fontSize: 18, 
+                      marginTop: 28, 
+                      marginBottom: 16, 
+                      fontWeight: '600' 
+                    }}>
+                      Possession
+                    </Text>
                     
                     {(() => {
                       const homePas = match.stats.homeTeam.teamStats.find(stat => stat.parameterCode === 'PAS')?.total || 0;
                       const awayPas = match.stats.awayTeam.teamStats.find(stat => stat.parameterCode === 'PAS')?.total || 0;
-                      const homePasR = match.stats.homeTeam.teamStats.find(stat => stat.parameterCode === 'PAS-R')?.total || 0;
-                      const awayPasR = match.stats.awayTeam.teamStats.find(stat => stat.parameterCode === 'PAS-R')?.total || 0;
                       const homePasX = match.stats.homeTeam.teamStats.find(stat => stat.parameterCode === 'PAS-X')?.total || 0;
                       const awayPasX = match.stats.awayTeam.teamStats.find(stat => stat.parameterCode === 'PAS-X')?.total || 0;
                       
@@ -666,45 +1121,23 @@ const MatchDetail = () => {
                       
                       return (
                         <>
-                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                            <Text style={{ color: 'white', fontWeight: '500', flex: 1, textAlign: 'center' }}>
-                              {homePossession}%
-                            </Text>
-                            <Text style={{ color: 'rgba(255, 255, 255, 0.7)', flex: 2, textAlign: 'center' }}>
-                              Possession
-                            </Text>
-                            <Text style={{ color: 'white', fontWeight: '500', flex: 1, textAlign: 'center' }}>
-                              {awayPossession}%
-                            </Text>
-                          </View>
-                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                            <Text style={{ color: 'white', fontWeight: '500', flex: 1, textAlign: 'center' }}>
-                              {homePas}
-                            </Text>
-                            <Text style={{ color: 'rgba(255, 255, 255, 0.7)', flex: 2, textAlign: 'center' }}>
-                              Passes
-                            </Text>
-                            <Text style={{ color: 'white', fontWeight: '500', flex: 1, textAlign: 'center' }}>
-                              {awayPas}
-                            </Text>
-                          </View>
-                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                            <Text style={{ color: 'white', fontWeight: '500', flex: 1, textAlign: 'center' }}>
-                              {homePasX}%
-                            </Text>
-                            <Text style={{ color: 'rgba(255, 255, 255, 0.7)', flex: 2, textAlign: 'center' }}>
-                              Précision des passes
-                            </Text>
-                            <Text style={{ color: 'white', fontWeight: '500', flex: 1, textAlign: 'center' }}>
-                              {awayPasX}%
-                            </Text>
-                          </View>
+                          <StatBar home={homePossession} away={awayPossession} label="Possession (%)" />
+                          <StatBar home={homePas} away={awayPas} label="Passes" />
+                          <StatBar home={homePasX} away={awayPasX} label="Précision des passes (%)" />
                         </>
                       );
                     })()}
                     
                     {/* Fautes et corners */}
-                    <Text style={{ color: 'white', fontSize: 16, marginTop: 24, marginBottom: 16, fontWeight: '600' }}>Fautes et corners</Text>
+                    <Text style={{ 
+                      color: 'white', 
+                      fontSize: 18, 
+                      marginTop: 28, 
+                      marginBottom: 16, 
+                      fontWeight: '600' 
+                    }}>
+                      Fautes et corners
+                    </Text>
                     
                     {(() => {
                       const homeFal = match.stats.homeTeam.teamStats.find(stat => stat.parameterCode === 'FAL')?.total || 0;
@@ -714,28 +1147,8 @@ const MatchDetail = () => {
                       
                       return (
                         <>
-                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                            <Text style={{ color: 'white', fontWeight: '500', flex: 1, textAlign: 'center' }}>
-                              {homeFal}
-                            </Text>
-                            <Text style={{ color: 'rgba(255, 255, 255, 0.7)', flex: 2, textAlign: 'center' }}>
-                              Fautes
-                            </Text>
-                            <Text style={{ color: 'white', fontWeight: '500', flex: 1, textAlign: 'center' }}>
-                              {awayFal}
-                            </Text>
-                          </View>
-                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                            <Text style={{ color: 'white', fontWeight: '500', flex: 1, textAlign: 'center' }}>
-                              {homeCrn}
-                            </Text>
-                            <Text style={{ color: 'rgba(255, 255, 255, 0.7)', flex: 2, textAlign: 'center' }}>
-                              Corners
-                            </Text>
-                            <Text style={{ color: 'white', fontWeight: '500', flex: 1, textAlign: 'center' }}>
-                              {awayCrn}
-                            </Text>
-                          </View>
+                          <StatBar home={homeFal} away={awayFal} label="Fautes" />
+                          <StatBar home={homeCrn} away={awayCrn} label="Corners" />
                         </>
                       );
                     })()}
@@ -745,15 +1158,43 @@ const MatchDetail = () => {
 
               {activeTab === 'lineups' && (
                 <>
-                  <Text style={{ color: 'white', fontSize: 20, fontWeight: 'bold', marginBottom: 16, paddingLeft: 4 }}>
+                  <Text style={{ 
+                    color: 'white', 
+                    fontSize: 22, 
+                    fontWeight: 'bold', 
+                    marginBottom: 20, 
+                    paddingLeft: 4 
+                  }}>
                     Compositions
                   </Text>
                   
                   {/* Équipe domicile */}
-                  <View style={{ marginBottom: 24, backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: 16, borderRadius: 12 }}>
-                    <Text style={{ color: 'white', fontSize: 16, marginBottom: 12, fontWeight: '600', textAlign: 'center' }}>
-                      {homeTeam.name}
-                    </Text>
+                  <View style={{ 
+                    marginBottom: 28, 
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)', 
+                    padding: 20, 
+                    borderRadius: 20 
+                  }}>
+                    <View style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      marginBottom: 16
+                    }}>
+                      <View style={{ 
+                        width: 14, 
+                        height: 14, 
+                        borderRadius: 7, 
+                        backgroundColor: '#f5793a',
+                        marginRight: 8
+                      }} />
+                      <Text style={{ 
+                        color: 'white', 
+                        fontSize: 18, 
+                        fontWeight: '600'
+                      }}>
+                        {homeTeam.name}
+                      </Text>
+                    </View>
                     
                     {homeTeam.players && homeTeam.players.length > 0 ? (
                       <FlatList
@@ -764,24 +1205,40 @@ const MatchDetail = () => {
                           <View style={{ 
                             flexDirection: 'row', 
                             alignItems: 'center',
-                            paddingVertical: 8,
+                            paddingVertical: 12,
                             borderBottomWidth: 1,
                             borderBottomColor: 'rgba(255, 255, 255, 0.1)'
                           }}>
                             <View style={{ 
-                              width: 28, 
-                              height: 28, 
-                              borderRadius: 14, 
-                              backgroundColor: homeTeam.firstColorHEX,
+                              width: 36, 
+                              height: 36, 
+                              borderRadius: 18, 
+                              backgroundColor: 'rgba(245, 121, 58, 0.8)', // Orange with transparency
                               alignItems: 'center',
                               justifyContent: 'center',
-                              marginRight: 12
+                              marginRight: 16
                             }}>
-                              <Text style={{ color: 'white', fontSize: 12, fontWeight: '600' }}>{item.jersey}</Text>
+                              <Text style={{ 
+                                color: 'white', 
+                                fontSize: 16, 
+                                fontWeight: '600' 
+                              }}>
+                                {item.jersey}
+                              </Text>
                             </View>
                             <View style={{ flex: 1 }}>
-                              <Text style={{ color: 'white', fontWeight: '500' }}>{item.jerseyName}</Text>
-                              <Text style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 12 }}>
+                              <Text style={{ 
+                                color: 'white', 
+                                fontWeight: '500',
+                                fontSize: 16
+                              }}>
+                                {item.jerseyName}
+                              </Text>
+                              <Text style={{ 
+                                color: 'rgba(255, 255, 255, 0.7)', 
+                                fontSize: 14,
+                                marginTop: 2
+                              }}>
                                 {item.role === 'goalkeeper' ? 'Gardien' : 
                                  item.role === 'defender' ? 'Défenseur' :
                                  item.role === 'midfielder' ? 'Milieu' : 'Attaquant'}
@@ -791,17 +1248,44 @@ const MatchDetail = () => {
                         )}
                       />
                     ) : (
-                      <Text style={{ color: 'rgba(255, 255, 255, 0.5)', textAlign: 'center', padding: 12 }}>
+                      <Text style={{ 
+                        color: 'rgba(255, 255, 255, 0.7)', 
+                        textAlign: 'center', 
+                        padding: 16,
+                        fontSize: 16
+                      }}>
                         Composition non disponible
                       </Text>
                     )}
                   </View>
                   
                   {/* Équipe extérieur */}
-                  <View style={{ marginBottom: 24, backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: 16, borderRadius: 12 }}>
-                    <Text style={{ color: 'white', fontSize: 16, marginBottom: 12, fontWeight: '600', textAlign: 'center' }}>
-                      {awayTeam.name}
-                    </Text>
+                  <View style={{ 
+                    marginBottom: 28, 
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)', 
+                    padding: 20, 
+                    borderRadius: 20 
+                  }}>
+                    <View style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      marginBottom: 16
+                    }}>
+                      <View style={{ 
+                        width: 14, 
+                        height: 14, 
+                        borderRadius: 7, 
+                        backgroundColor: '#1e3799',
+                        marginRight: 8
+                      }} />
+                      <Text style={{ 
+                        color: 'white', 
+                        fontSize: 18, 
+                        fontWeight: '600'
+                      }}>
+                        {awayTeam.name}
+                      </Text>
+                    </View>
                     
                     {awayTeam.players && awayTeam.players.length > 0 ? (
                       <FlatList
@@ -812,24 +1296,40 @@ const MatchDetail = () => {
                           <View style={{ 
                             flexDirection: 'row', 
                             alignItems: 'center',
-                            paddingVertical: 8,
+                            paddingVertical: 12,
                             borderBottomWidth: 1,
                             borderBottomColor: 'rgba(255, 255, 255, 0.1)'
                           }}>
                             <View style={{ 
-                              width: 28, 
-                              height: 28, 
-                              borderRadius: 14, 
-                              backgroundColor: awayTeam.firstColorHEX,
+                              width: 36, 
+                              height: 36, 
+                              borderRadius: 18, 
+                              backgroundColor: 'rgba(30, 55, 153, 0.8)', // Blue with transparency
                               alignItems: 'center',
                               justifyContent: 'center',
-                              marginRight: 12
+                              marginRight: 16
                             }}>
-                              <Text style={{ color: 'white', fontSize: 12, fontWeight: '600' }}>{item.jersey}</Text>
+                              <Text style={{ 
+                                color: 'white', 
+                                fontSize: 16, 
+                                fontWeight: '600' 
+                              }}>
+                                {item.jersey}
+                              </Text>
                             </View>
                             <View style={{ flex: 1 }}>
-                              <Text style={{ color: 'white', fontWeight: '500' }}>{item.jerseyName}</Text>
-                              <Text style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 12 }}>
+                              <Text style={{ 
+                                color: 'white', 
+                                fontWeight: '500',
+                                fontSize: 16
+                              }}>
+                                {item.jerseyName}
+                              </Text>
+                              <Text style={{ 
+                                color: 'rgba(255, 255, 255, 0.7)', 
+                                fontSize: 14,
+                                marginTop: 2
+                              }}>
                                 {item.role === 'goalkeeper' ? 'Gardien' : 
                                  item.role === 'defender' ? 'Défenseur' :
                                  item.role === 'midfielder' ? 'Milieu' : 'Attaquant'}
@@ -839,7 +1339,12 @@ const MatchDetail = () => {
                         )}
                       />
                     ) : (
-                      <Text style={{ color: 'rgba(255, 255, 255, 0.5)', textAlign: 'center', padding: 12 }}>
+                      <Text style={{ 
+                        color: 'rgba(255, 255, 255, 0.7)', 
+                        textAlign: 'center', 
+                        padding: 16,
+                        fontSize: 16
+                      }}>
                         Composition non disponible
                       </Text>
                     )}
