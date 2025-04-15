@@ -1,13 +1,17 @@
-import React, { useRef, useEffect } from "react"
-import { View, TouchableOpacity, Text, TouchableWithoutFeedback, Animated, Platform, StyleSheet } from "react-native"
+import React, { useRef, useEffect, useState } from "react"
+import { View, TouchableOpacity, Text, TouchableWithoutFeedback, Animated, Platform, StyleSheet, LayoutChangeEvent } from "react-native"
 import { BlurView } from "expo-blur"
 import { Ionicons } from "@expo/vector-icons"
 import { ScrollView } from "react-native-gesture-handler"
+import { useRouter, usePathname } from "expo-router"
+
+type RouteType = "/home" | "/search" | "/league" | "/team"
 
 const menuItems = [
-  { icon: "search-outline", label: "Search" },
-  { icon: "trophy", label: "Mes Ligues" },
-  { icon: "star", label: "Mes Équipes" },
+  { icon: "home-outline", label: "Accueil", route: "/home" },
+  { icon: "search-outline", label: "Rechercher", route: "/search" },
+  { icon: "trophy-outline", label: "Mes Ligues", route: "/league" },
+  { icon: "star-outline", label: "Mes Équipes", route: "/team" },
 ] as const
 
 interface ExpandableMenuProps {
@@ -26,8 +30,12 @@ const ExpandedHeader = () => {
 }
 
 export default function ExpandableMenu({ isOpen, onToggle }: ExpandableMenuProps) {
+  const router = useRouter()
+  const pathname = usePathname()
   const animatedValue = useRef(new Animated.Value(0)).current
   const expandAnimation = useRef(new Animated.Value(0)).current
+  // State to track the content width
+  const [textWidth, setTextWidth] = useState(0)
 
   useEffect(() => {
     Animated.parallel([
@@ -47,12 +55,16 @@ export default function ExpandableMenu({ isOpen, onToggle }: ExpandableMenuProps
 
   const height = animatedValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [36, Platform.OS === "web" ? 210 : 190],
+    outputRange: [36, Platform.OS === "web" ? 250 : 210],
   })
 
+  // Calculate the required width for the closed state based on text content + padding + icon
+  // Use minimum 120px, but allow for more space if needed
+  const requiredClosedWidth = Math.max(50, textWidth > 0 ? textWidth + 50 : 120)
+  
   const width = animatedValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [120, 200],
+    outputRange: [requiredClosedWidth, 300],
   })
 
   const borderRadius = expandAnimation.interpolate({
@@ -65,6 +77,29 @@ export default function ExpandableMenu({ isOpen, onToggle }: ExpandableMenuProps
     outputRange: [0, 0, 1],
   })
 
+  const handleNavigation = (route: RouteType) => {
+    router.push(route)
+    onToggle()
+  }
+
+  const getCurrentIcon = () => {
+    const currentItem = menuItems.find(item => item.route === pathname) || menuItems[0]
+    return currentItem.icon
+  }
+
+  const getCurrentLabel = () => {
+    const currentItem = menuItems.find(item => item.route === pathname) || menuItems[0]
+    return currentItem.label
+  }
+
+  // Function to measure text width
+  const onTextLayout = (e: LayoutChangeEvent) => {
+    const { width } = e.nativeEvent.layout
+    if (width > 0 && width !== textWidth) {
+      setTextWidth(width)
+    }
+  }
+
   return (
     <>
       {isOpen && (
@@ -72,7 +107,7 @@ export default function ExpandableMenu({ isOpen, onToggle }: ExpandableMenuProps
           <View className="absolute -top-[1000px] -left-[1000px] -right-[1000px] -bottom-[1000px] z-[99]" />
         </TouchableWithoutFeedback>
       )}
-      <View className="absolute top-2 right-0 z-[100]">
+      <View className="absolute top-[12px] right-0 z-[100]">
         <Animated.View
           className="overflow-hidden"
           style={{
@@ -86,7 +121,8 @@ export default function ExpandableMenu({ isOpen, onToggle }: ExpandableMenuProps
             },
             shadowOpacity: 0.15,
             shadowRadius: 8,
-            elevation: 8
+            elevation: 8,
+            maxWidth: 200
           }}
         >
           <BlurView 
@@ -103,6 +139,7 @@ export default function ExpandableMenu({ isOpen, onToggle }: ExpandableMenuProps
                 <TouchableOpacity 
                   onPress={onToggle}
                   activeOpacity={0.7}
+                  style={{ paddingTop: 0 }}
                 >
                   <Animated.View style={{ 
                     opacity: animatedValue.interpolate({
@@ -114,32 +151,31 @@ export default function ExpandableMenu({ isOpen, onToggle }: ExpandableMenuProps
                       outputRange: [36, 0]
                     }),
                     borderRadius: 20,
-                    paddingTop: 3,
                     flexDirection: 'row',
                     alignItems: 'center',
                     justifyContent: 'space-between'
                   }}>
                     {!isOpen && (
-                      <View style={styles.closedMenuContainer}>
-                        <Ionicons name="search-outline" size={18} color="white" />
-                        <Text style={styles.searchText}>Search</Text>
-                        <Ionicons
-                          name="menu-outline"
-                          size={18}
-                          color="white"
-                          style={{ opacity: 0.6 }}
-                        />
+                      <View style={[styles.closedMenuContainer, { paddingTop: 8 }]}>
+                        <Ionicons name={getCurrentIcon()} size={18} color="white" style={{ marginRight: 8 }} />
+                        <Text 
+                          style={styles.searchText}
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                          onLayout={onTextLayout}
+                        >
+                          {getCurrentLabel()}
+                        </Text>
                       </View>
                     )}
                   </Animated.View>
                 </TouchableOpacity>
 
                 <Animated.View style={{ opacity }}>
-                  <ExpandedHeader />
                   <ScrollView
-                    bounces={true}
+                    bounces={false}
                     showsVerticalScrollIndicator={false}
-                    className="px-2"
+                    className="px-2 pt-2"
                   >
                     <View style={{ paddingBottom: 6 }}>
                       {menuItems.map((item, index) => (
@@ -147,9 +183,10 @@ export default function ExpandableMenu({ isOpen, onToggle }: ExpandableMenuProps
                           key={index}
                           style={[
                             styles.menuItem,
-                            item.icon === "search-outline" ? styles.activeMenuItem : null
+                            pathname === item.route ? styles.activeMenuItem : null
                           ]}
                           activeOpacity={0.7}
+                          onPress={() => handleNavigation(item.route as RouteType)}
                         >
                           <View style={styles.iconContainer}>
                             <Ionicons name={item.icon} size={14} color="white" />
@@ -177,19 +214,16 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.08)'
   },
   closedMenuContainer: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 5,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between'
+    width: '100%',
   },
   searchText: {
     color: 'white',
     fontSize: 15,
     fontWeight: '500',
-    marginLeft: 6,
-    marginRight: 6,
-    flex: 1,
     fontFamily: Platform.OS === 'ios' ? '-apple-system' : 'sans-serif',
   },
   menuItem: {
@@ -234,4 +268,3 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === 'ios' ? '-apple-system' : 'sans-serif',
   }
 });
-
