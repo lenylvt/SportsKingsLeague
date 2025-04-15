@@ -14,18 +14,19 @@ export default function RootLayout() {
       <StatusBar style="light" />
       <View style={{ flex: 1 }}>
         {/* Header persistant avec menu */}
-        <View style={{ 
-          position: 'absolute', 
-          top: 0, 
-          left: 0, 
-          right: 0, 
+        <View style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
           zIndex: 100,
-          paddingTop: 48,
+          paddingTop: (Platform.OS === 'ios' ? 50 : 30) + 10,
+          paddingBottom: 10,
           paddingHorizontal: 16,
         }}>
-          <View style={{ 
-            flexDirection: 'row', 
-            alignItems: 'center', 
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
             justifyContent: 'space-between',
             height: 48,
           }}>

@@ -1,5 +1,5 @@
-import React, { useRef, useEffect, useState } from "react"
-import { View, TouchableOpacity, Text, TouchableWithoutFeedback, Animated, Platform, StyleSheet, LayoutChangeEvent } from "react-native"
+import React, { useRef, useEffect } from "react"
+import { View, TouchableOpacity, Text, TouchableWithoutFeedback, Animated, Platform, StyleSheet } from "react-native"
 import { BlurView } from "expo-blur"
 import { Ionicons } from "@expo/vector-icons"
 import { ScrollView } from "react-native-gesture-handler"
@@ -9,9 +9,9 @@ type RouteType = "/home" | "/search" | "/league" | "/team"
 
 const menuItems = [
   { icon: "home-outline", label: "Accueil", route: "/home" },
-  { icon: "search-outline", label: "Rechercher", route: "/search" },
-  { icon: "trophy-outline", label: "Mes Ligues", route: "/league" },
-  { icon: "star-outline", label: "Mes Équipes", route: "/team" },
+  { icon: "trophy-outline", label: "Ligues", route: "/league" },
+  { icon: "star-outline", label: "Équipes", route: "/team" },
+  { icon: "search-outline", label: "Recherche", route: "/search" },
 ] as const
 
 interface ExpandableMenuProps {
@@ -19,23 +19,11 @@ interface ExpandableMenuProps {
   onToggle: () => void
 }
 
-const ExpandedHeader = () => {
-  return (
-    <View className="flex-row items-center justify-end px-3 py-1.5">
-      <TouchableOpacity className="rounded-full bg-white/10 items-center justify-center px-3 py-1" style={styles.button}>
-        <Text style={styles.buttonText}>Home</Text>
-      </TouchableOpacity>
-    </View>
-  )
-}
-
 export default function ExpandableMenu({ isOpen, onToggle }: ExpandableMenuProps) {
   const router = useRouter()
   const pathname = usePathname()
   const animatedValue = useRef(new Animated.Value(0)).current
   const expandAnimation = useRef(new Animated.Value(0)).current
-  // State to track the content width
-  const [textWidth, setTextWidth] = useState(0)
 
   useEffect(() => {
     Animated.parallel([
@@ -58,13 +46,10 @@ export default function ExpandableMenu({ isOpen, onToggle }: ExpandableMenuProps
     outputRange: [36, Platform.OS === "web" ? 250 : 210],
   })
 
-  // Calculate the required width for the closed state based on text content + padding + icon
-  // Use minimum 120px, but allow for more space if needed
-  const requiredClosedWidth = Math.max(50, textWidth > 0 ? textWidth + 50 : 120)
-  
+  const closedWidth = 140;
   const width = animatedValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [requiredClosedWidth, 300],
+    outputRange: [closedWidth, 200],
   })
 
   const borderRadius = expandAnimation.interpolate({
@@ -82,23 +67,8 @@ export default function ExpandableMenu({ isOpen, onToggle }: ExpandableMenuProps
     onToggle()
   }
 
-  const getCurrentIcon = () => {
-    const currentItem = menuItems.find(item => item.route === pathname) || menuItems[0]
-    return currentItem.icon
-  }
-
-  const getCurrentLabel = () => {
-    const currentItem = menuItems.find(item => item.route === pathname) || menuItems[0]
-    return currentItem.label
-  }
-
-  // Function to measure text width
-  const onTextLayout = (e: LayoutChangeEvent) => {
-    const { width } = e.nativeEvent.layout
-    if (width > 0 && width !== textWidth) {
-      setTextWidth(width)
-    }
-  }
+  // Re-introduce logic to get current item based on pathname
+  const currentItem = menuItems.find(item => item.route === pathname) || menuItems[0];
 
   return (
     <>
@@ -107,94 +77,75 @@ export default function ExpandableMenu({ isOpen, onToggle }: ExpandableMenuProps
           <View className="absolute -top-[1000px] -left-[1000px] -right-[1000px] -bottom-[1000px] z-[99]" />
         </TouchableWithoutFeedback>
       )}
-      <View className="absolute top-[12px] right-0 z-[100]">
+      <View className="absolute top-[6px] right-0 z-[100]">
         <Animated.View
           className="overflow-hidden"
           style={{
             height,
             width,
             borderRadius,
-            shadowColor: "#000",
+            shadowColor: "#FFC107",
             shadowOffset: {
               width: 0,
-              height: 5,
+              height: 2,
             },
-            shadowOpacity: 0.15,
-            shadowRadius: 8,
+            shadowOpacity: 0.4,
+            shadowRadius: 4,
             elevation: 8,
-            maxWidth: 200
           }}
         >
-          <BlurView 
-            intensity={isOpen ? 70 : 20} 
-            tint="dark" 
+          <BlurView
+            intensity={isOpen ? 70 : 40}
+            tint="dark"
             style={styles.blurContainer}
           >
             <TouchableWithoutFeedback
-              onPress={(e) => {
-                e.stopPropagation()
-              }}
+              onPress={isOpen ? undefined : onToggle} // Only toggle when closed
             >
-              <View>
-                <TouchableOpacity 
-                  onPress={onToggle}
-                  activeOpacity={0.7}
-                  style={{ paddingTop: 0 }}
-                >
-                  <Animated.View style={{ 
+              <View style={{ flex: 1 }}>
+                {/* Closed State Content (Now Dynamic) */}
+                <Animated.View style={[
+                  styles.closedContentContainer,
+                  {
                     opacity: animatedValue.interpolate({
-                      inputRange: [0, 0],
+                      inputRange: [0, 0.1],
                       outputRange: [1, 0]
                     }),
-                    height: animatedValue.interpolate({
-                      inputRange: [0, 0],
-                      outputRange: [36, 0]
-                    }),
-                    borderRadius: 20,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'space-between'
-                  }}>
-                    {!isOpen && (
-                      <View style={[styles.closedMenuContainer, { paddingTop: 8 }]}>
-                        <Ionicons name={getCurrentIcon()} size={18} color="white" style={{ marginRight: 8 }} />
-                        <Text 
-                          style={styles.searchText}
-                          numberOfLines={1}
-                          ellipsizeMode="tail"
-                          onLayout={onTextLayout}
-                        >
-                          {getCurrentLabel()}
-                        </Text>
-                      </View>
-                    )}
-                  </Animated.View>
-                </TouchableOpacity>
+                    pointerEvents: isOpen ? 'none' : 'auto',
+                  }
+                ]}>
+                  <Ionicons name={currentItem.icon as any} size={18} color="white" />
+                  <Text style={styles.closedText} numberOfLines={1} ellipsizeMode="tail">{currentItem.label}</Text>
+                </Animated.View>
 
-                <Animated.View style={{ opacity }}>
+                {/* Open State Content */}
+                <Animated.View style={{
+                  opacity,
+                  flex: 1,
+                  pointerEvents: isOpen ? 'auto' : 'none',
+                }}>
                   <ScrollView
                     bounces={false}
                     showsVerticalScrollIndicator={false}
-                    className="px-2 pt-2"
+                    style={styles.scrollViewOpen}
+                    contentContainerStyle={{ paddingBottom: 10 }}
                   >
-                    <View style={{ paddingBottom: 6 }}>
-                      {menuItems.map((item, index) => (
-                        <TouchableOpacity
-                          key={index}
-                          style={[
-                            styles.menuItem,
-                            pathname === item.route ? styles.activeMenuItem : null
-                          ]}
-                          activeOpacity={0.7}
-                          onPress={() => handleNavigation(item.route as RouteType)}
-                        >
-                          <View style={styles.iconContainer}>
-                            <Ionicons name={item.icon} size={14} color="white" />
-                          </View>
-                          <Text style={styles.menuItemText}>{item.label}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
+                    {menuItems.map((item, index) => (
+                      <TouchableOpacity
+                        key={index}
+                        style={[
+                          styles.menuItem,
+                          pathname === item.route ? styles.activeMenuItem : null
+                        ]}
+                        activeOpacity={0.7}
+                        onPress={() => handleNavigation(item.route as RouteType)}
+                      >
+                        <View style={styles.iconContainer}>
+                          <Ionicons name={item.icon as any} size={14} color="white" />
+                        </View>
+                        <Text style={styles.menuItemText}>{item.label}</Text>
+                      </TouchableOpacity>
+                    ))}
                   </ScrollView>
                 </Animated.View>
               </View>
@@ -208,23 +159,29 @@ export default function ExpandableMenu({ isOpen, onToggle }: ExpandableMenuProps
 
 const styles = StyleSheet.create({
   blurContainer: {
+    flex: 1,
     overflow: 'hidden',
-    height: '100%',
-    borderWidth: 0.5,
-    borderColor: 'rgba(255, 255, 255, 0.08)'
   },
-  closedMenuContainer: {
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+  closedContentContainer: {
+    ...StyleSheet.absoluteFillObject,
     flexDirection: 'row',
     alignItems: 'center',
-    width: '100%',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    zIndex: 5,
   },
-  searchText: {
+  closedText: {
+    flex: 1, // Allow text to take space and ellipse if needed
     color: 'white',
     fontSize: 15,
-    fontWeight: '500',
-    fontFamily: Platform.OS === 'ios' ? '-apple-system' : 'sans-serif',
+    fontWeight: '600',
+    marginHorizontal: 8, // Adjusted margin
+    textAlign: 'center', // Center text between icons
+  },
+  scrollViewOpen: {
+    flex: 1,
+    paddingHorizontal: 8,
+    paddingTop: 8,
   },
   menuItem: {
     flexDirection: 'row',
@@ -252,19 +209,4 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     fontFamily: Platform.OS === 'ios' ? '-apple-system' : 'sans-serif',
   },
-  button: {
-    borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    shadowColor: "#FFC107",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '500',
-    fontFamily: Platform.OS === 'ios' ? '-apple-system' : 'sans-serif',
-  }
 });

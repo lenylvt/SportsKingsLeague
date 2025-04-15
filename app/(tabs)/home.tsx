@@ -1,18 +1,11 @@
 import { Stack } from 'expo-router';
-import { View, Text, ScrollView, Platform, TouchableOpacity, Image, LayoutAnimation, UIManager } from 'react-native';
+import { View, Text, ScrollView, Platform, TouchableOpacity, Image } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import useFavorites, { FavoriteLeague } from '../hooks/useFavorites';
-
-// Activer LayoutAnimation pour Android
-if (Platform.OS === 'android') {
-  if (UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-  }
-}
 
 type QuickAction = {
   icon: keyof typeof Ionicons.glyphMap;
@@ -194,20 +187,17 @@ export default function Home() {
               ))}
             </View> */}
 
-            {/* Structure Flex pour centrer Aujourd'hui */}
+            {/* Onglets Matchs */}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 20, marginTop: 16 }}>
 
-              {/* Past */}
+              {/* Hier */}
               <TouchableOpacity
-                onPress={() => {
-                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                  setActiveTab('Yesterday');
-                }}
-                style={{ paddingVertical: 6, paddingHorizontal: 8, marginHorizontal: 10 }}
+                onPress={() => setActiveTab('Yesterday')}
+                style={{ paddingVertical: 6, paddingHorizontal: 8, marginHorizontal: 10 /* Marge réduite et égale */ }}
               >
                 <Text style={{
-                  color: activeTab === 'Yesterday' ? 'white' : 'rgba(235, 235, 245, 0.5)',
-                  fontSize: activeTab === 'Yesterday' ? 16 : 15,
+                  color: activeTab === 'Yesterday' ? 'white' : 'rgba(235, 235, 245, 0.5)', // Opacité augmentée (alpha à 0.5)
+                  fontSize: activeTab === 'Yesterday' ? 16 : 15, // Plus grand si actif
                   fontWeight: activeTab === 'Yesterday' ? '600' : '400',
                   fontFamily: Platform.OS === 'ios' ? '-apple-system' : 'sans-serif'
                 }}>
@@ -215,17 +205,14 @@ export default function Home() {
                 </Text>
               </TouchableOpacity>
 
-              {/* Today */}
+              {/* Aujourd'hui (centré avec marges) */}
               <TouchableOpacity
-                onPress={() => {
-                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                  setActiveTab('Today');
-                }}
-                style={{ paddingVertical: 6, paddingHorizontal: 8, marginHorizontal: 10 }}
+                onPress={() => setActiveTab('Today')}
+                style={{ paddingVertical: 6, paddingHorizontal: 8, marginHorizontal: 10 /* Marge réduite et égale */ }}
               >
                 <Text style={{
-                  color: activeTab === 'Today' ? 'white' : 'rgba(235, 235, 245, 0.5)',
-                  fontSize: activeTab === 'Today' ? 16 : 15,
+                  color: activeTab === 'Today' ? 'white' : 'rgba(235, 235, 245, 0.5)', // Opacité augmentée
+                  fontSize: activeTab === 'Today' ? 16 : 15, // Plus grand si actif
                   fontWeight: activeTab === 'Today' ? '600' : '400',
                   fontFamily: Platform.OS === 'ios' ? '-apple-system' : 'sans-serif'
                 }}>
@@ -233,17 +220,14 @@ export default function Home() {
                 </Text>
               </TouchableOpacity>
 
-              {/* Next */}
+              {/* Prochainement */}
               <TouchableOpacity
-                onPress={() => {
-                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                  setActiveTab('Upcoming');
-                }}
-                style={{ paddingVertical: 6, paddingHorizontal: 8, marginHorizontal: 10 }}
+                onPress={() => setActiveTab('Upcoming')} // Garder la clé 'Upcoming' pour la logique
+                style={{ paddingVertical: 6, paddingHorizontal: 8, marginHorizontal: 10 /* Marge réduite et égale */ }}
               >
                 <Text style={{
-                  color: activeTab === 'Upcoming' ? 'white' : 'rgba(235, 235, 245, 0.5)',
-                  fontSize: activeTab === 'Upcoming' ? 16 : 15,
+                  color: activeTab === 'Upcoming' ? 'white' : 'rgba(235, 235, 245, 0.5)', // Opacité augmentée
+                  fontSize: activeTab === 'Upcoming' ? 16 : 15, // Plus grand si actif
                   fontWeight: activeTab === 'Upcoming' ? '600' : '400',
                   fontFamily: Platform.OS === 'ios' ? '-apple-system' : 'sans-serif'
                 }}>
