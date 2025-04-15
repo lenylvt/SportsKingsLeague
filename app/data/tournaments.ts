@@ -239,3 +239,5 @@ export const tournaments: Tournament[] = [
     ]
   }
 ];
+
+export default tournaments;

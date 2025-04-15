@@ -69,4 +69,7 @@ export function useFavorites() {
     removeFavorite,
     isFavorite
   };
-} 
+}
+
+// Ajout d'une exportation par défaut
+export default useFavorites; 

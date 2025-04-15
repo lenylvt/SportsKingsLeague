@@ -6,6 +6,18 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 
+// Fonction utilitaire pour les logs
+const logInfo = (message: string, data?: any) => {
+  console.log(`[TeamDetail] 📘 ${message}`, data ? data : '');
+};
+
+const logError = (message: string, error?: any) => {
+  console.error(`[TeamDetail] 🔴 ${message}`, error ? error : '');
+  if (error?.stack) {
+    console.error(`[TeamDetail] 🔴 Stack: ${error.stack}`);
+  }
+};
+
 interface Team {
   id: number;
   name: string;
@@ -23,33 +35,91 @@ interface Team {
       name: string;
     };
   }>;
+  players: Player[];
+  matches: Match[];
+}
+
+interface Player {
+  id: number;
+  firstName: string;
+  lastName: string;
+  jerseyName: string;
+  role: string;
+  image: {
+    url: string;
+  } | null;
+  jersey: number;
+}
+
+interface Match {
+  id: number;
+  date: string;
+  participants: {
+    homeTeamId: number;
+    awayTeamId: number;
+    homeTeam: {
+      name: string;
+      logo: {
+        url: string;
+      };
+    };
+    awayTeam: {
+      name: string;
+      logo: {
+        url: string;
+      };
+    };
+  };
+  scores: {
+    homeScore: number | null;
+    awayScore: number | null;
+  };
+  seasonId: number;
 }
 
 export default function TeamDetail() {
-  const { id } = useLocalSearchParams();
+  const { id, competitionId } = useLocalSearchParams();
   const router = useRouter();
   const [team, setTeam] = useState<Team | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [activeTab, setActiveTab] = useState<'roster' | 'matches'>('roster');
 
   useEffect(() => {
     const fetchTeamDetails = async () => {
       try {
+        logInfo(`Récupération des détails de l'équipe avec l'ID: ${id}, competitionId: ${competitionId || 'non spécifié'}`);
         setIsLoading(true);
-        const response = await fetch(`https://kingsleague.pro/api/v1/team/${id}`, {
+        
+        const apiCompetitionId = competitionId ? Number(competitionId) : 21;
+        const apiUrl = `https://kingsleague.pro/api/v1/teams/${id}?competition=${apiCompetitionId}`;
+        logInfo(`URL API appelée: ${apiUrl}`);
+        
+        const response = await fetch(apiUrl, {
           headers: {
             'referer': 'https://kingsleague.pro/',
             'lang': 'fr'
           }
         });
-
+        
+        logInfo(`Statut de la réponse: ${response.status}`);
+        
         if (!response.ok) {
-          throw new Error('Erreur lors de la récupération des détails de l\'équipe');
+          const responseText = await response.text();
+          logError(`Erreur de réponse ${response.status}`, responseText);
+          throw new Error(`Erreur lors de la récupération des détails de l'équipe (${response.status})`);
         }
 
         const data = await response.json();
+        logInfo(`Données reçues pour l'équipe ${id}`, {
+          name: data?.name,
+          players: data?.players?.length || 0,
+          matches: data?.matches?.length || 0
+        });
+        
         setTeam(data);
       } catch (err) {
+        logError(`Erreur lors du chargement de l'équipe ${id}`, err);
         setError(err instanceof Error ? err : new Error('Une erreur est survenue'));
       } finally {
         setIsLoading(false);
@@ -58,8 +128,27 @@ export default function TeamDetail() {
 
     if (id) {
       fetchTeamDetails();
+    } else {
+      logError("ID de l'équipe non défini");
+      setIsLoading(false);
     }
-  }, [id]);
+  }, [id, competitionId]);
+
+  const goToMatchDetail = (match: Match) => {
+    try {
+      const matchCompetitionId = 21; // Kings League
+      logInfo(`Navigation vers les détails du match ${match.id}, competitionId: ${matchCompetitionId}`);
+      router.push({
+        pathname: "/match/[id]",
+        params: { 
+          id: match.id.toString(), 
+          competitionId: matchCompetitionId.toString() 
+        }
+      });
+    } catch (error) {
+      logError(`Erreur lors de la navigation vers le match ${match.id}`, error);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -199,6 +288,72 @@ export default function TeamDetail() {
               ))}
             </View>
           </ScrollView>
+
+          {activeTab === 'matches' && (
+            <View>
+              {team.matches && team.matches.length > 0 ? (
+                team.matches.map((match) => (
+                  <TouchableOpacity
+                    key={match.id}
+                    style={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                      borderRadius: 12,
+                      padding: 12,
+                      marginBottom: 8
+                    }}
+                    onPress={() => goToMatchDetail(match)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <View style={{ flex: 1, alignItems: 'flex-end', paddingRight: 10 }}>
+                        {match.participants.homeTeam?.logo && (
+                          <View style={{ width: 24, height: 24, marginBottom: 4 }}>
+                            <Image 
+                              source={{ uri: match.participants.homeTeam.logo.url }} 
+                              style={{ width: '100%', height: '100%', resizeMode: 'contain' }}
+                            />
+                          </View>
+                        )}
+                        <Text style={{ color: 'white', fontSize: 14, fontWeight: '500' }}>
+                          {match.participants.homeTeam?.name || `Équipe ${match.participants.homeTeamId}`}
+                        </Text>
+                      </View>
+                      <View style={{ marginHorizontal: 12, alignItems: 'center' }}>
+                        <Text style={{ color: 'white', fontSize: 16, fontWeight: '600' }}>
+                          {match.scores.homeScore !== null ? `${match.scores.homeScore} - ${match.scores.awayScore}` : 'vs'}
+                        </Text>
+                        <Text style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 12 }}>
+                          {new Date(match.date).toLocaleDateString('fr-FR', {
+                            day: 'numeric',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </Text>
+                      </View>
+                      <View style={{ flex: 1, paddingLeft: 10 }}>
+                        {match.participants.awayTeam?.logo && (
+                          <View style={{ width: 24, height: 24, marginBottom: 4 }}>
+                            <Image 
+                              source={{ uri: match.participants.awayTeam.logo.url }} 
+                              style={{ width: '100%', height: '100%', resizeMode: 'contain' }}
+                            />
+                          </View>
+                        )}
+                        <Text style={{ color: 'white', fontSize: 14, fontWeight: '500' }}>
+                          {match.participants.awayTeam?.name || `Équipe ${match.participants.awayTeamId}`}
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <Text style={{ color: 'rgba(255, 255, 255, 0.7)', textAlign: 'center', padding: 20 }}>
+                  Aucun match disponible
+                </Text>
+              )}
+            </View>
+          )}
         </View>
       </SafeAreaView>
     </View>

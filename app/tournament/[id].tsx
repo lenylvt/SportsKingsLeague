@@ -7,9 +7,21 @@ import { tournaments, TournamentSplit } from '../data/tournaments';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import TeamList from '../components/TeamList';
-import { useTeams } from '../hooks/useTeams';
-import { useCompetitionSeason } from '../hooks/useCompetitionSeason';
+import useTeams from '../hooks/useTeams';
+import useCompetitionSeason from '../hooks/useCompetitionSeason';
 import StandingsTable from '../components/StandingsTable';
+
+// Fonctions utilitaires pour les logs
+const logInfo = (message: string, data?: any) => {
+  console.log(`[TournamentDetail] 📘 ${message}`, data ? data : '');
+};
+
+const logError = (message: string, error?: any) => {
+  console.error(`[TournamentDetail] 🔴 ${message}`, error ? error : '');
+  if (error?.stack) {
+    console.error(`[TournamentDetail] 🔴 Stack: ${error.stack}`);
+  }
+};
 
 interface MatchProps {
   match: {
@@ -23,6 +35,7 @@ interface MatchProps {
       homeScore: number | null;
       awayScore: number | null;
     };
+    seasonId?: number;
   };
   teams: Array<{
     id: number;
@@ -39,6 +52,20 @@ const MatchCard = ({ match, teams }: MatchProps) => {
   const homeTeam = teams?.find(t => t.id === match.participants.homeTeamId);
   const awayTeam = teams?.find(t => t.id === match.participants.awayTeamId);
   
+  const handleNavigation = () => {
+    try {
+      // Utiliser le véritable competitionId (21 pour Kings League) au lieu du seasonId
+      const competitionId = 21; // ID de la Kings League
+      logInfo(`Navigation vers les détails du match ${match.id}, competitionId: ${competitionId}`);
+      router.push({
+        pathname: "/match/[id]",
+        params: { id: match.id.toString(), competitionId: competitionId.toString() }
+      });
+    } catch (error) {
+      logError(`Erreur lors de la navigation vers le match ${match.id}`, error);
+    }
+  };
+  
   return (
     <TouchableOpacity 
       key={match.id}
@@ -48,7 +75,7 @@ const MatchCard = ({ match, teams }: MatchProps) => {
         padding: 12,
         marginBottom: 8
       }}
-      onPress={() => router.push(`/match/${match.id}`)}
+      onPress={handleNavigation}
       activeOpacity={0.7}
     >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -116,6 +143,8 @@ export default function TournamentDetail() {
   const { season, isLoading: seasonLoading, error: seasonError } = useCompetitionSeason(currentSplitId);
 
   useEffect(() => {
+    logInfo(`Initialisation de la vue du tournoi avec ID: ${id}`);
+    
     // Animation d'entrée
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -128,14 +157,35 @@ export default function TournamentDetail() {
       t.splits?.some(split => split.id === Number(id))
     );
     if (mainTournament) {
+      logInfo(`Tournoi trouvé: ${mainTournament.name}`);
       setTournament(mainTournament);
       const split = mainTournament.splits?.find(s => s.id === Number(id));
       if (split) {
+        logInfo(`Split trouvé: ${split.name}`);
         setCurrentSplit(split);
         setCurrentSplitId(Number(id));
+      } else {
+        logError(`Aucun split trouvé pour l'ID: ${id}`);
       }
+    } else {
+      logError(`Aucun tournoi trouvé pour l'ID: ${id}`);
     }
   }, [id]);
+
+  useEffect(() => {
+    if (seasonError) {
+      logError(`Erreur lors du chargement de la saison ${currentSplitId}`, seasonError);
+    } else if (season) {
+      logInfo(`Saison chargée avec succès pour ${currentSplitId}`, {
+        seasonName: season.name,
+        phases: season.phases?.length,
+        turns: season.phases?.[0]?.groups?.[0]?.turns?.length || 0,
+        matches: season.phases?.[0]?.groups?.[0]?.turns?.reduce(
+          (acc, turn) => acc + (turn.matches?.length || 0), 0
+        ) || 0
+      });
+    }
+  }, [season, seasonError, currentSplitId]);
 
   const handleChangeSplit = (splitId: number) => {
     if (splitId === currentSplitId) {

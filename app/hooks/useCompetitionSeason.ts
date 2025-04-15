@@ -1,5 +1,17 @@
 import { useState, useEffect } from 'react';
 
+// Fonctions utilitaires pour les logs
+const logInfo = (message: string, data?: any) => {
+  console.log(`[useCompetitionSeason] 📘 ${message}`, data ? data : '');
+};
+
+const logError = (message: string, error?: any) => {
+  console.error(`[useCompetitionSeason] 🔴 ${message}`, error ? error : '');
+  if (error?.stack) {
+    console.error(`[useCompetitionSeason] 🔴 Stack: ${error.stack}`);
+  }
+};
+
 interface Team {
   id: number;
   name: string;
@@ -141,22 +153,39 @@ export function useCompetitionSeason(seasonId: number): UseCompetitionSeasonResu
 
   useEffect(() => {
     const fetchSeason = async () => {
+      logInfo(`Récupération des données pour la saison ID: ${seasonId}`);
       try {
         setIsLoading(true);
-        const response = await fetch(`https://kingsleague.pro/api/v1/competition/seasons/${seasonId}`, {
+        const apiUrl = `https://kingsleague.pro/api/v1/competition/seasons/${seasonId}`;
+        logInfo(`URL API appelée: ${apiUrl}`);
+        
+        const response = await fetch(apiUrl, {
           headers: {
             'referer': 'https://kingsleague.pro/',
             'lang': 'fr'
           }
         });
         
+        logInfo(`Statut de la réponse: ${response.status}`);
+        
         if (!response.ok) {
-          throw new Error('Erreur lors de la récupération des données de la saison');
+          const responseText = await response.text();
+          logError(`Erreur de réponse ${response.status}`, responseText);
+          throw new Error(`Erreur lors de la récupération des données de la saison (${response.status})`);
         }
 
         const data = await response.json();
+        logInfo(`Données reçues pour la saison ${seasonId}`, {
+          name: data?.name,
+          competitionId: data?.competitionId,
+          competitionName: data?.competition?.name,
+          phases: data?.phases?.length || 0,
+          teams: data?.teams?.length || 0
+        });
+        
         setSeason(data);
       } catch (err) {
+        logError(`Erreur lors du chargement de la saison ${seasonId}`, err);
         setError(err instanceof Error ? err : new Error('Une erreur est survenue'));
       } finally {
         setIsLoading(false);
@@ -167,4 +196,7 @@ export function useCompetitionSeason(seasonId: number): UseCompetitionSeasonResu
   }, [seasonId]);
 
   return { season, isLoading, error };
-} 
+}
+
+// Ajout d'une exportation par défaut
+export default useCompetitionSeason; 
