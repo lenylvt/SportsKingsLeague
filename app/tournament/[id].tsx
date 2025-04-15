@@ -1,16 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { View, Text, TouchableOpacity, Pressable, ScrollView, Platform, Modal, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, Pressable, ScrollView, Platform, Modal, Animated, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { tournaments, TournamentSplit } from '../data/tournaments';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
+import TeamList from '../components/TeamList';
+import { useTeams } from '../hooks/useTeams';
+import { useCompetitionSeason } from '../hooks/useCompetitionSeason';
+import StandingsTable from '../components/StandingsTable';
 
 export default function TournamentDetail() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const [tournament, setTournament] = useState(tournaments.find(t => t.id === Number(id)));
+  const [tournament, setTournament] = useState(() => {
+    const mainTournament = tournaments.find(t => t.splits?.some(split => split.id === Number(id)));
+    return mainTournament || null;
+  });
   const [selectedTab, setSelectedTab] = useState('Matches');
   const [isFavorite, setIsFavorite] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
@@ -19,6 +26,9 @@ export default function TournamentDetail() {
   
   // Animation simple de fade-in
   const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  const { teams, isLoading: teamsLoading, error: teamsError } = useTeams(currentSplitId);
+  const { season, isLoading: seasonLoading, error: seasonError } = useCompetitionSeason(currentSplitId);
 
   useEffect(() => {
     // Animation d'entrée
@@ -195,28 +205,116 @@ export default function TournamentDetail() {
           </View>
 
           {selectedTab === 'Matches' && (
-            <View className="items-center justify-center p-6">
-              <Text className="text-white text-xl mb-4">Prochains Matchs</Text>
-              <Text className="text-white/70">Aucun match programmé pour le moment</Text>
-            </View>
+            <ScrollView className="p-4">
+              {seasonLoading ? (
+                <View style={{ padding: 20, alignItems: 'center' }}>
+                  <ActivityIndicator size="large" color="#FFC107" />
+                </View>
+              ) : seasonError ? (
+                <View style={{ padding: 20, alignItems: 'center' }}>
+                  <Text style={{ color: 'rgba(255, 255, 255, 0.7)', textAlign: 'center' }}>
+                    Une erreur est survenue lors du chargement des matchs
+                  </Text>
+                </View>
+              ) : season && season.phases[0]?.groups[0]?.turns ? (
+                season.phases[0].groups[0].turns.map((turn) => (
+                  <View key={turn.id} style={{ marginBottom: 24 }}>
+                    <Text style={{ color: 'white', fontSize: 18, fontWeight: '600', marginBottom: 12 }}>
+                      {turn.name}
+                    </Text>
+                    {turn.matches.map((match) => {
+                      const homeTeam = season.teams?.find(t => t.id === match.participants.homeTeamId);
+                      const awayTeam = season.teams?.find(t => t.id === match.participants.awayTeamId);
+                      
+                      return (
+                        <View 
+                          key={match.id}
+                          style={{
+                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                            borderRadius: 12,
+                            padding: 12,
+                            marginBottom: 8
+                          }}
+                        >
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                              <Text style={{ color: 'white', fontSize: 14, fontWeight: '500' }}>
+                                {homeTeam?.name}
+                              </Text>
+                            </View>
+                            <View style={{ marginHorizontal: 12, alignItems: 'center' }}>
+                              <Text style={{ color: 'white', fontSize: 16, fontWeight: '600' }}>
+                                {match.scores.homeScore !== null ? `${match.scores.homeScore} - ${match.scores.awayScore}` : 'vs'}
+                              </Text>
+                              <Text style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 12 }}>
+                                {new Date(match.date).toLocaleDateString('fr-FR', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </Text>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ color: 'white', fontSize: 14, fontWeight: '500' }}>
+                                {awayTeam?.name}
+                              </Text>
+                            </View>
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+                ))
+              ) : (
+                <View style={{ padding: 20, alignItems: 'center' }}>
+                  <Text style={{ color: 'rgba(255, 255, 255, 0.7)', textAlign: 'center' }}>
+                    Aucun match programmé pour le moment
+                  </Text>
+                </View>
+              )}
+            </ScrollView>
           )}
 
           {selectedTab === 'Classement' && (
-            <View className="items-center justify-center p-6">
-              <Text className="text-white text-xl mb-4">Classement</Text>
-              <Text className="text-white/70">Classement non disponible</Text>
-            </View>
+            <ScrollView className="p-4">
+              {seasonLoading ? (
+                <View style={{ padding: 20, alignItems: 'center' }}>
+                  <ActivityIndicator size="large" color="#FFC107" />
+                </View>
+              ) : seasonError ? (
+                <View style={{ padding: 20, alignItems: 'center' }}>
+                  <Text style={{ color: 'rgba(255, 255, 255, 0.7)', textAlign: 'center' }}>
+                    Une erreur est survenue lors du chargement du classement
+                  </Text>
+                </View>
+              ) : season && season.standings ? (
+                <StandingsTable standings={season.standings} />
+              ) : (
+                <View style={{ padding: 20, alignItems: 'center' }}>
+                  <Text style={{ color: 'rgba(255, 255, 255, 0.7)', textAlign: 'center' }}>
+                    Classement non disponible
+                  </Text>
+                </View>
+              )}
+            </ScrollView>
           )}
 
           {selectedTab === 'Équipes' && (
             <ScrollView className="p-4">
-              <Text className="text-white text-xl mb-4">Équipes</Text>
-              {[1, 2, 3, 4, 5, 6].map((item) => (
-                <View key={item} className="flex-row items-center bg-black/30 rounded-lg p-3 mb-3">
-                  <View className="w-10 h-10 bg-white/10 rounded-lg mr-4"></View>
-                  <Text className="text-white font-medium">Équipe {item}</Text>
+              {teamsLoading ? (
+                <View style={{ padding: 20, alignItems: 'center' }}>
+                  <ActivityIndicator size="large" color="#FFC107" />
                 </View>
-              ))}
+              ) : teamsError ? (
+                <View style={{ padding: 20, alignItems: 'center' }}>
+                  <Text style={{ color: 'rgba(255, 255, 255, 0.7)', textAlign: 'center' }}>
+                    Une erreur est survenue lors du chargement des équipes
+                  </Text>
+                </View>
+              ) : (
+                <TeamList teams={teams} competitionId={currentSplitId} />
+              )}
             </ScrollView>
           )}
         </View>

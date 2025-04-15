@@ -73,6 +73,16 @@ export default function RootLayout() {
               contentStyle: { backgroundColor: '#000000' },
             }} 
           />
+          <Stack.Screen 
+            name="team/[id]" 
+            options={{ 
+              headerShown: false,
+              presentation: 'modal',
+              animation: 'slide_from_bottom',
+              animationDuration: 250,
+              contentStyle: { backgroundColor: '#000000' },
+            }} 
+          />
         </Stack>
       </View>
     </GestureHandlerRootView>
