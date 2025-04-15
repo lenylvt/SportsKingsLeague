@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "apple-sports-menu",
-    "slug": "apple-sports-menu",
+    "slug": "kings-league",
     "version": "1.0.0",
     "scheme": "apple-sports-menu",
     "web": {
@@ -41,8 +41,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "1f13cf76-4292-4aab-8a16-ced4886edb0e"
+        "projectId": "626a699e-0fb0-4e5c-902e-918ed561d5a2"
       }
-    }
+    },
+    "owner": "lenylvt"
   }
 }
