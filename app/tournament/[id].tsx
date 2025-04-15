@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { View, Text, TouchableOpacity, Pressable, ScrollView, Platform, Modal, Animated, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, Pressable, ScrollView, Platform, Modal, Animated, ActivityIndicator, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { tournaments, TournamentSplit } from '../data/tournaments';
@@ -10,6 +10,91 @@ import TeamList from '../components/TeamList';
 import { useTeams } from '../hooks/useTeams';
 import { useCompetitionSeason } from '../hooks/useCompetitionSeason';
 import StandingsTable from '../components/StandingsTable';
+
+interface MatchProps {
+  match: {
+    id: number;
+    date: string;
+    participants: {
+      homeTeamId: number;
+      awayTeamId: number;
+    };
+    scores: {
+      homeScore: number | null;
+      awayScore: number | null;
+    };
+  };
+  teams: Array<{
+    id: number;
+    name: string;
+    logo?: {
+      url: string;
+    };
+  }>;
+}
+
+// Nouveau composant pour les détails de match
+const MatchCard = ({ match, teams }: MatchProps) => {
+  const router = useRouter();
+  const homeTeam = teams?.find(t => t.id === match.participants.homeTeamId);
+  const awayTeam = teams?.find(t => t.id === match.participants.awayTeamId);
+  
+  return (
+    <TouchableOpacity 
+      key={match.id}
+      style={{
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderRadius: 12,
+        padding: 12,
+        marginBottom: 8
+      }}
+      onPress={() => router.push(`/match/${match.id}`)}
+      activeOpacity={0.7}
+    >
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <View style={{ flex: 1, alignItems: 'flex-end', paddingRight: 10 }}>
+          {homeTeam?.logo && (
+            <View style={{ width: 24, height: 24, marginBottom: 4 }}>
+              <Image 
+                source={{ uri: homeTeam.logo.url }} 
+                style={{ width: '100%', height: '100%', resizeMode: 'contain' }}
+              />
+            </View>
+          )}
+          <Text style={{ color: 'white', fontSize: 14, fontWeight: '500' }}>
+            {homeTeam?.name || `Équipe ${match.participants.homeTeamId}`}
+          </Text>
+        </View>
+        <View style={{ marginHorizontal: 12, alignItems: 'center' }}>
+          <Text style={{ color: 'white', fontSize: 16, fontWeight: '600' }}>
+            {match.scores.homeScore !== null ? `${match.scores.homeScore} - ${match.scores.awayScore}` : 'vs'}
+          </Text>
+          <Text style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 12 }}>
+            {new Date(match.date).toLocaleDateString('fr-FR', {
+              day: 'numeric',
+              month: 'short',
+              hour: '2-digit',
+              minute: '2-digit'
+            })}
+          </Text>
+        </View>
+        <View style={{ flex: 1, paddingLeft: 10 }}>
+          {awayTeam?.logo && (
+            <View style={{ width: 24, height: 24, marginBottom: 4 }}>
+              <Image 
+                source={{ uri: awayTeam.logo.url }} 
+                style={{ width: '100%', height: '100%', resizeMode: 'contain' }}
+              />
+            </View>
+          )}
+          <Text style={{ color: 'white', fontSize: 14, fontWeight: '500' }}>
+            {awayTeam?.name || `Équipe ${match.participants.awayTeamId}`}
+          </Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+};
 
 export default function TournamentDetail() {
   const { id } = useLocalSearchParams();
@@ -205,7 +290,11 @@ export default function TournamentDetail() {
           </View>
 
           {selectedTab === 'Matches' && (
-            <ScrollView className="p-4">
+            <ScrollView 
+              className="p-4"
+              contentContainerStyle={{ paddingBottom: 100 }}
+              showsVerticalScrollIndicator={true}
+            >
               {seasonLoading ? (
                 <View style={{ padding: 20, alignItems: 'center' }}>
                   <ActivityIndicator size="large" color="#FFC107" />
@@ -222,48 +311,9 @@ export default function TournamentDetail() {
                     <Text style={{ color: 'white', fontSize: 18, fontWeight: '600', marginBottom: 12 }}>
                       {turn.name}
                     </Text>
-                    {turn.matches.map((match) => {
-                      const homeTeam = season.teams?.find(t => t.id === match.participants.homeTeamId);
-                      const awayTeam = season.teams?.find(t => t.id === match.participants.awayTeamId);
-                      
-                      return (
-                        <View 
-                          key={match.id}
-                          style={{
-                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                            borderRadius: 12,
-                            padding: 12,
-                            marginBottom: 8
-                          }}
-                        >
-                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                              <Text style={{ color: 'white', fontSize: 14, fontWeight: '500' }}>
-                                {homeTeam?.name}
-                              </Text>
-                            </View>
-                            <View style={{ marginHorizontal: 12, alignItems: 'center' }}>
-                              <Text style={{ color: 'white', fontSize: 16, fontWeight: '600' }}>
-                                {match.scores.homeScore !== null ? `${match.scores.homeScore} - ${match.scores.awayScore}` : 'vs'}
-                              </Text>
-                              <Text style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 12 }}>
-                                {new Date(match.date).toLocaleDateString('fr-FR', {
-                                  day: 'numeric',
-                                  month: 'short',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </Text>
-                            </View>
-                            <View style={{ flex: 1 }}>
-                              <Text style={{ color: 'white', fontSize: 14, fontWeight: '500' }}>
-                                {awayTeam?.name}
-                              </Text>
-                            </View>
-                          </View>
-                        </View>
-                      );
-                    })}
+                    {turn.matches.map((match) => (
+                      <MatchCard key={match.id} match={match} teams={season.teams} />
+                    ))}
                   </View>
                 ))
               ) : (
