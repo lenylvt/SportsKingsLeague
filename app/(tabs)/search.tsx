@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { tournaments, Tournament as ImportedTournament } from '../data/tournaments';
 import { StatusBar } from 'expo-status-bar';
+import { useFavorites } from '../hooks/useFavorites';
 
 interface Split {
   id: number;
@@ -24,6 +25,7 @@ interface Tournament {
 export default function Search() {
   const router = useRouter();
   const screenHeight = Dimensions.get('window').height;
+  const { addFavorite, removeFavorite, isFavorite } = useFavorites();
 
   const countryToEmoji: Record<string, string> = {
     'ES': '🇪🇸',
@@ -68,6 +70,14 @@ export default function Search() {
   };
 
   const latestSplits = getLatestSplits();
+
+  const handleToggleFavorite = (league: any) => {
+    if (isFavorite(league.id)) {
+      removeFavorite(league.id);
+    } else {
+      addFavorite(league);
+    }
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: '#000000' }}>
@@ -167,7 +177,8 @@ export default function Search() {
                     backgroundColor: 'rgba(255, 255, 255, 0.1)',
                     borderRadius: 12,
                     paddingHorizontal: 8,
-                    paddingVertical: 2
+                    paddingVertical: 2,
+                    marginBottom: 8
                   }}>
                     <Text style={{
                       color: 'rgba(255, 255, 255, 0.6)',
@@ -177,6 +188,23 @@ export default function Search() {
                       {item.splitName}
                     </Text>
                   </View>
+                  <TouchableOpacity
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleToggleFavorite(item);
+                    }}
+                    style={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      borderRadius: 12,
+                      padding: 6
+                    }}
+                  >
+                    <Ionicons 
+                      name={isFavorite(item.id) ? "heart" : "heart-outline"} 
+                      size={16} 
+                      color={isFavorite(item.id) ? "#FFC107" : "white"} 
+                    />
+                  </TouchableOpacity>
                 </TouchableOpacity>
               ))}
             </View>
