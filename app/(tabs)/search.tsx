@@ -2,16 +2,13 @@ import { Stack } from 'expo-router';
 import { TouchableOpacity, Text, View, TextInput, ScrollView, Dimensions, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
-import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
-import { tournaments } from './data/tournaments';
+import { tournaments, Tournament as ImportedTournament } from '../data/tournaments';
 import { StatusBar } from 'expo-status-bar';
-import ExpandableMenu from './components/ExpandableMenu';
 
 interface Split {
-  id: string;
+  id: number;
   year: string;
   name: string;
 }
@@ -26,12 +23,7 @@ interface Tournament {
 
 export default function Search() {
   const router = useRouter();
-  const [showMenu, setShowMenu] = useState(false);
   const screenHeight = Dimensions.get('window').height;
-
-  const toggleMenu = () => {
-    setShowMenu(!showMenu);
-  };
 
   const countryToEmoji: Record<string, string> = {
     'ES': '🇪🇸',
@@ -49,7 +41,7 @@ export default function Search() {
   const getLatestSplits = () => {
     const result = [];
     
-    for (const tournament of tournaments as Tournament[]) {
+    for (const tournament of tournaments) {
       if (tournament.splits && tournament.splits.length > 0) {
         const yearGroups: Record<string, Split> = {};
         tournament.splits.forEach(split => {
@@ -78,7 +70,7 @@ export default function Search() {
   const latestSplits = getLatestSplits();
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#000000', position: 'relative', overflow: Platform.OS === "web" ? 'scroll' : undefined }}>
+    <View style={{ flex: 1, backgroundColor: '#000000' }}>
       <StatusBar style="light" />
       <LinearGradient
         colors={['#FFC107', 'transparent']}
@@ -86,46 +78,39 @@ export default function Search() {
           position: 'absolute',
           left: 0,
           right: 0,
-          top: 0,
           height: screenHeight * 0.3,
         }}
       />
       
-      <SafeAreaView className="flex-1 max-w-[767px] mx-auto w-full">
+      <View style={{ flex: 1, maxWidth: 767, width: '100%', marginHorizontal: 'auto', paddingTop: 120 }}>
         <Stack.Screen 
           options={{ 
             headerShown: false,
           }} 
         />
         
-        <View className="px-4 pt-2 relative">
-          <View className="flex-row items-center justify-between mb-4 relative" style={{ zIndex: 10 }}>
-            <View className="flex-row items-center">
-              <Text style={{ 
-                color: 'white', 
-                fontSize: 38, 
-                fontWeight: '700', 
-                fontFamily: Platform.OS === 'ios' ? '-apple-system' : 'sans-serif',
-                paddingTop: 8
-              }}>
-                Kings
-              </Text>
-            </View>
-
-            <ExpandableMenu isOpen={showMenu} onToggle={toggleMenu} />
-          </View>
-
-          <View className="mb-4">
-            <View className="bg-white/10 flex-row items-center px-4 py-2.5 rounded-xl border border-white/5">
+        <View style={{ paddingHorizontal: 16 }}>
+          <View style={{ marginBottom: 16 }}>
+            <View style={{ 
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingHorizontal: 16,
+              paddingVertical: 10,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: 'rgba(255, 255, 255, 0.05)'
+            }}>
               <Ionicons name="search" size={20} color="white" style={{opacity: 0.7, marginRight: 8}} />
               <TextInput 
                 placeholder="Ligues et Équipes"
                 placeholderTextColor="rgba(255,255,255,0.4)"
-                className="flex-1 text-white text-base"
                 style={{
+                  flex: 1,
+                  color: 'white',
+                  fontSize: 16,
                   fontFamily: Platform.OS === 'ios' ? '-apple-system' : 'sans-serif',
-                  fontWeight: '400',
-                  fontSize: 16
+                  fontWeight: '400'
                 }}
               />
               <TouchableOpacity>
@@ -134,7 +119,7 @@ export default function Search() {
             </View>
           </View>
         
-          <ScrollView showsVerticalScrollIndicator={false} className={`space-y-4 ${showMenu ? '-z-10' : ''}`}>
+          <ScrollView showsVerticalScrollIndicator={false}>
             <Text style={{ 
               color: 'white', 
               fontSize: 22, 
@@ -145,28 +130,59 @@ export default function Search() {
               Naviguer les Compétitions
             </Text>
 
-            <View className="flex-row flex-wrap justify-between">
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
               {latestSplits.map((item) => (
                 <TouchableOpacity 
                   key={item.id}
-                  className="w-[31%] mb-6 items-center"
-                  onPress={() => router.push(`/tournament/${item.id}` as any)}
+                  style={{
+                    width: '31%',
+                    marginBottom: 24,
+                    alignItems: 'center'
+                  }}
+                  onPress={() => router.push(`/tournament/${item.id}`)}
                 >
-                  <View className="w-20 h-20 rounded-2xl items-center justify-center mb-2 bg-white/10">
+                  <View style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: 16,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: 8,
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)'
+                  }}>
                     <Text style={{ fontSize: 40 }}>
                       {countryToEmoji[item.category.alpha2 || ''] || '🏆'}
                     </Text>
                   </View>
-                  <Text className="text-white text-center font-semibold text-sm mb-1">{item.name}</Text>
-                  <View className="bg-white/10 rounded-full px-2 py-0.5">
-                    <Text className="text-gray-400 text-center text-xs">{item.splitName}</Text>
+                  <Text style={{
+                    color: 'white',
+                    textAlign: 'center',
+                    fontWeight: '600',
+                    fontSize: 14,
+                    marginBottom: 4
+                  }}>
+                    {item.name}
+                  </Text>
+                  <View style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    borderRadius: 12,
+                    paddingHorizontal: 8,
+                    paddingVertical: 2
+                  }}>
+                    <Text style={{
+                      color: 'rgba(255, 255, 255, 0.6)',
+                      textAlign: 'center',
+                      fontSize: 12
+                    }}>
+                      {item.splitName}
+                    </Text>
                   </View>
                 </TouchableOpacity>
               ))}
             </View>
           </ScrollView>
         </View>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }
