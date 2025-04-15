@@ -170,8 +170,9 @@ const MatchDetail = () => {
   const params = useLocalSearchParams();
   const router = useRouter();
   const id = params.id as string;
-  // Utiliser le competitionId par défaut de la Kings League (21)
-  const initialCompetitionId = params.competitionId ? Number(params.competitionId) : 21;
+  
+  // Le competitionId doit venir des paramètres et non d'une valeur fixe
+  const initialCompetitionId = params.competitionId ? Number(params.competitionId) : undefined;
 
   // Initialiser les états
   const [match, setMatch] = useState<Match | null>(null);
@@ -179,7 +180,7 @@ const MatchDetail = () => {
   const [error, setError] = useState<Error | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [activeTab, setActiveTab] = useState<'resume' | 'stats' | 'lineups'>('resume');
-  const [competitionId, setCompetitionId] = useState<number>(initialCompetitionId);
+  const [competitionId, setCompetitionId] = useState<number | undefined>(initialCompetitionId);
   
   const MAX_RETRIES = 3;
   
@@ -190,16 +191,33 @@ const MatchDetail = () => {
       logInfo(`CompetitionId reçu dans les paramètres: ${receivedCompetitionId}`);
       setCompetitionId(receivedCompetitionId);
     } else {
-      logInfo(`CompetitionId non trouvé dans les paramètres, utilisation de la valeur par défaut: 21 (Kings League)`);
+      logInfo(`Essai de détection automatique du competitionId...`);
+      
+      // Si nous n'avons pas de competitionId, essayons d'abord avec le matchId
+      // En pratique, il serait préférable d'avoir une API dédiée pour obtenir ces informations
+      const possibleCompetitionIds = [21, 35, 26, 36, 7, 33, 13, 28]; // IDs des compétitions connues
+      
+      // Essayer avec la première compétition connue (21 = Kings League)
+      const fallbackCompetitionId = 21;
+      logInfo(`Utilisation du competitionId par défaut: ${fallbackCompetitionId}`);
+      setCompetitionId(fallbackCompetitionId);
     }
   }, [params.competitionId]);
   
   // Charger les données du match
   useEffect(() => {
+    // Vérifier que nous avons un competitionId avant de continuer
+    if (!competitionId) {
+      logError("CompetitionId manquant, impossible de charger les détails du match");
+      setError(new Error("CompetitionId non fourni. Veuillez réessayer avec le bon identifiant de compétition."));
+      setIsLoading(false);
+      return;
+    }
+    
     // Toujours procéder au chargement car competitionId est maintenant initialisé correctement
     const fetchMatchDetails = async () => {
       try {
-        logInfo(`Récupération des détails du match avec l'ID: ${id} (essai ${retryCount + 1}/${MAX_RETRIES})`);
+        logInfo(`Récupération des détails du match avec l'ID: ${id} et competitionId: ${competitionId} (essai ${retryCount + 1}/${MAX_RETRIES})`);
         setIsLoading(true);
         
         const apiUrl = `https://kingsleague.pro/api/v1/competition/matches/${id}?live=false&competitionId=${competitionId}`;

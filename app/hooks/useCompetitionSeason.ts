@@ -144,12 +144,14 @@ interface UseCompetitionSeasonResult {
   season: CompetitionSeason | null;
   isLoading: boolean;
   error: Error | null;
+  competitionId: number | null;
 }
 
 export function useCompetitionSeason(seasonId: number): UseCompetitionSeasonResult {
   const [season, setSeason] = useState<CompetitionSeason | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [competitionId, setCompetitionId] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchSeason = async () => {
@@ -183,6 +185,11 @@ export function useCompetitionSeason(seasonId: number): UseCompetitionSeasonResu
           teams: data?.teams?.length || 0
         });
         
+        // Stocker le competitionId pour pouvoir l'utiliser facilement
+        if (data?.competitionId) {
+          setCompetitionId(data.competitionId);
+        }
+        
         setSeason(data);
       } catch (err) {
         logError(`Erreur lors du chargement de la saison ${seasonId}`, err);
@@ -195,7 +202,7 @@ export function useCompetitionSeason(seasonId: number): UseCompetitionSeasonResu
     fetchSeason();
   }, [seasonId]);
 
-  return { season, isLoading, error };
+  return { season, isLoading, error, competitionId };
 }
 
 // Ajout d'une exportation par défaut

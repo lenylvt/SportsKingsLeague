@@ -136,7 +136,12 @@ export default function TeamDetail() {
 
   const goToMatchDetail = (match: Match) => {
     try {
-      const matchCompetitionId = 21; // Kings League
+      // Récupérer le competitionId depuis l'API ou utiliser le seasonId si non disponible
+      // Pour faire cela correctement, il faudrait d'abord charger les infos de saison
+      // Comme fallback, on peut utiliser le competitionId des params ou une valeur par défaut
+      const receivedCompetitionId = competitionId ? Number(competitionId) : undefined;
+      const matchCompetitionId = receivedCompetitionId || match.seasonId;
+      
       logInfo(`Navigation vers les détails du match ${match.id}, competitionId: ${matchCompetitionId}`);
       router.push({
         pathname: "/match/[id]",

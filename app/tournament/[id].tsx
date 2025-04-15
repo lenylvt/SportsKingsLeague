@@ -52,14 +52,17 @@ const MatchCard = ({ match, teams }: MatchProps) => {
   const homeTeam = teams?.find(t => t.id === match.participants.homeTeamId);
   const awayTeam = teams?.find(t => t.id === match.participants.awayTeamId);
   
+  // Obtenir le competitionId depuis le state supérieur
+  const { competitionId } = useCompetitionSeason(Number(match.seasonId));
+  
   const handleNavigation = () => {
     try {
-      // Utiliser le véritable competitionId (21 pour Kings League) au lieu du seasonId
-      const competitionId = 21; // ID de la Kings League
-      logInfo(`Navigation vers les détails du match ${match.id}, competitionId: ${competitionId}`);
+      // Récupérer le bon competitionId depuis les données de saison
+      const effectiveCompId = competitionId || (match.seasonId || 0);
+      logInfo(`Navigation vers les détails du match ${match.id}, competitionId: ${effectiveCompId}`);
       router.push({
         pathname: "/match/[id]",
-        params: { id: match.id.toString(), competitionId: competitionId.toString() }
+        params: { id: match.id.toString(), competitionId: effectiveCompId.toString() }
       });
     } catch (error) {
       logError(`Erreur lors de la navigation vers le match ${match.id}`, error);
